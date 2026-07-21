@@ -186,29 +186,34 @@ func getFileLine(
 	}
 
 	if file != nil {
-		if lock, ok := locksByPath[file.Path]; ok {
-			output += " " + formatLfsLock(lock)
+		if lfsInfo := formatLfsInfo(file, locksByPath[file.Path]); lfsInfo != "" {
+			output += " " + lfsInfo
 		}
 	}
 
 	return output
 }
 
-// formatLfsLock renders the git-lfs lock annotation shown next to a locked file
-// in the files panel: a padlock followed by the lock owner. Locks we hold are
-// green; locks held by others are yellow, to warn before editing.
-func formatLfsLock(lock *models.LfsLock) string {
-	lockColor := style.FgYellow
-	if lock.Mine {
-		lockColor = style.FgGreen
+// formatLfsInfo renders the git-lfs annotations shown next to a file in the
+// files panel: an "LFS" badge when the file is tracked through the lfs filter,
+// and a padlock plus owner when the file is locked. Locks we hold are green;
+// locks held by others are yellow, to warn before editing.
+func formatLfsInfo(file *models.File, lock *models.LfsLock) string {
+	parts := []string{}
+
+	if file.IsLfsTracked {
+		parts = append(parts, style.FgCyan.Sprint("LFS"))
 	}
 
-	icon := "LFS"
-	if icons.IsIconEnabled() {
-		icon = "\uf023" // nerd-font padlock
+	if lock != nil {
+		lockColor := style.FgYellow
+		if lock.Mine {
+			lockColor = style.FgGreen
+		}
+		parts = append(parts, lockColor.Sprintf("🔒 %s", lock.Owner))
 	}
 
-	return lockColor.Sprintf("%s %s", icon, lock.Owner)
+	return strings.Join(parts, " ")
 }
 
 func formatFileStatus(file *models.File, restColor style.TextStyle) string {

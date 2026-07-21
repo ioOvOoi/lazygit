@@ -1255,6 +1255,10 @@ func (self *RefreshHelper) refreshStateFiles(captured capturedFilesState, env re
 			Background:         env.background,
 		})
 
+	// Annotate which files are lfs-tracked so the files panel can flag them.
+	// This is a no-op (and spawns no process) in repos that don't use lfs.
+	self.c.Git().Lfs.MarkTrackedFiles(files)
+
 	conflictFileCount := 0
 	for _, file := range files {
 		if file.HasMergeConflicts {

@@ -438,3 +438,28 @@ for it in `go.mod`/`go.sum` or the module cache (`$GOMODCACHE`); it isn't
 there. When you need to read or change gocui internals (the task manager, the
 event loop, worker/UI-thread dispatch, view rendering), edit `pkg/gocui`
 directly.
+
+## Cursor Cloud specific instructions
+
+The standard commands are the `justfile` recipes documented under "Common
+commands" above; nothing here replaces them. This section only records the
+non-obvious environment caveats.
+
+- **Unset `NO_COLOR` when running the unit tests.** The Cloud VM ships with
+  `NO_COLOR=1` in the environment. `gookit/color` honours `NO_COLOR` and
+  strips all ANSI codes even when a test forces the color level, so the
+  `pkg/gui/style` tests (`TestMerge`, `TestTemplateFuncMapAddColors`) fail
+  spuriously. Run `env -u NO_COLOR just unit-test` (or export nothing and use
+  `env -u NO_COLOR go test ./... -short`). The integration tests (`just e2e`)
+  are unaffected.
+- **`just`, `gofumpt`, and `golangci-lint` are all available.** `just` is a
+  prebuilt binary on `PATH`; `gofumpt` is a `go tool` and `golangci-lint` is
+  run via `go run …@version` through `scripts/golangci-lint-shim.sh`, so
+  `just lint` downloads golangci-lint on first use (needs network once, then
+  cached).
+- **Go dependencies are vendored** under `vendor/` and CI builds with
+  `-mod=vendor`, so no module download is required to build or test the main
+  module.
+- Lazygit is a terminal UI, so running it interactively (`just run`, or the
+  built `./lazygit` binary inside a git repo) requires a TTY / terminal
+  emulator; drive it via the desktop terminal for manual testing.

@@ -24,6 +24,7 @@ type GitCommand struct {
 	Diff           *git_commands.DiffCommands
 	File           *git_commands.FileCommands
 	Flow           *git_commands.FlowCommands
+	Lfs            *git_commands.LfsCommands
 	Patch          *git_commands.PatchCommands
 	Rebase         *git_commands.RebaseCommands
 	Remote         *git_commands.RemoteCommands
@@ -104,6 +105,7 @@ func NewGitCommandAux(
 	fileLoader := git_commands.NewFileLoader(gitCommon, cmd, configCommands)
 	statusCommands := git_commands.NewStatusCommands(gitCommon)
 	flowCommands := git_commands.NewFlowCommands(gitCommon)
+	lfsCommands := git_commands.NewLfsCommands(gitCommon)
 	remoteCommands := git_commands.NewRemoteCommands(gitCommon)
 	branchCommands := git_commands.NewBranchCommands(gitCommon)
 	syncCommands := git_commands.NewSyncCommands(gitCommon)
@@ -145,6 +147,7 @@ func NewGitCommandAux(
 		Diff:           diffCommands,
 		File:           fileCommands,
 		Flow:           flowCommands,
+		Lfs:            lfsCommands,
 		Patch:          patchCommands,
 		Rebase:         rebaseCommands,
 		Remote:         remoteCommands,

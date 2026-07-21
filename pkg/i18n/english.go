@@ -761,6 +761,8 @@ type TranslationSet struct {
 	LfsLockLockedAtColumn                 string
 	LfsForceUnlockTitle                   string
 	LfsForceUnlockPrompt                  string
+	LfsUnlockOnPushTitle                  string
+	LfsUnlockOnPushPrompt                 string
 	NavigationTitle                       string
 	SuggestionsCheatsheetTitle            string
 	// Unlike the cheatsheet title above, the real suggestions title has a little message saying press tab to focus
@@ -1927,6 +1929,8 @@ func EnglishTranslationSet() *TranslationSet {
 		LfsLockLockedAtColumn:                    "Locked at:",
 		LfsForceUnlockTitle:                      "Force unlock",
 		LfsForceUnlockPrompt:                     "'{{.path}}' is locked by '{{.owner}}'. Are you sure you want to force-unlock it? This may disrupt their work.",
+		LfsUnlockOnPushTitle:                     "Unlock LFS files on push",
+		LfsUnlockOnPushPrompt:                    "Release your git-lfs lock on {{.count}} committed file(s) the next time you push? Others can only pull your changes after you push, so unlocking then avoids conflicts.",
 		NavigationTitle:                          "List panel navigation",
 		SuggestionsCheatsheetTitle:               "Suggestions",
 		SuggestionsTitle:                         "Suggestions (press %s to focus)",

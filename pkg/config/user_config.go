@@ -422,8 +422,9 @@ type LogConfig struct {
 }
 
 type LfsConfig struct {
-	// If true, automatically release the git-lfs locks you hold on files as they are committed. Only locks you own are released; locks held by others are left untouched. Note that others can't pull your changes until you push, so you may prefer to keep files locked until after pushing.
-	UnlockOnCommit bool `yaml:"unlockOnCommit"`
+	// When to release the git-lfs locks you hold on files you commit. Since teammates can only pull your changes after you push, the lock is released on push rather than at commit time. 'prompt' asks at commit time whether to release the committed files' locks on your next push; 'always' schedules it without asking; 'never' keeps the locks until you unlock them manually. Only locks you own are ever released.
+	// One of: 'prompt' (default) | 'always' | 'never'
+	UnlockOnPush string `yaml:"unlockOnPush" jsonschema:"enum=prompt,enum=always,enum=never"`
 }
 
 type CommitPrefixConfig struct {
@@ -950,7 +951,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				SquashMergeMessage: "Squash merge {{selectedRef}} into {{currentBranch}}",
 			},
 			Lfs: LfsConfig{
-				UnlockOnCommit: true,
+				UnlockOnPush: "prompt",
 			},
 			Log: LogConfig{
 				Order:          "topo-order",

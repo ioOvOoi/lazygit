@@ -229,6 +229,9 @@ func (self *SyncController) pushAux(currentBranch *models.Branch, opts pushOpts)
 			}
 			return err
 		}
+		// Now that the commits are on the remote, release the lfs locks the user
+		// chose (at commit time) to free on push. Best-effort; only locks we own.
+		self.c.Git().Lfs.UnlockPendingOnPush()
 		self.c.RefreshFromWorker(types.RefreshOptions{})
 		return nil
 	})

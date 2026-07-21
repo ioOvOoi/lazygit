@@ -13,6 +13,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
+	"github.com/jesseduffield/lazygit/pkg/utils"
 	"github.com/samber/lo"
 )
 
@@ -145,10 +146,10 @@ func (self *WorkingTreeHelper) HandleCommitPressWithMessage(initialMessage strin
 }
 
 func (self *WorkingTreeHelper) handleCommit(summary string, description string, forceSkipHooks bool) error {
-	// Capture which staged files to unlock before committing: once the commit
-	// lands and the model refreshes, these files are no longer staged, so we'd
-	// lose track of what was just committed.
-	lfsPathsToUnlock := self.lfsPathsToUnlockOnCommit()
+	// Capture which committed files we hold lfs locks on before committing: once
+	// the commit lands and the model refreshes, these files are no longer
+	// staged, so we'd lose track of what was just committed.
+	lockedPaths := self.committedLockedLfsPaths()
 
 	cmdObj := self.c.Git().Commit.CommitCmdObj(summary, description, forceSkipHooks)
 	self.c.LogAction(self.c.Tr.Actions.Commit)
@@ -160,41 +161,70 @@ func (self *WorkingTreeHelper) handleCommit(summary string, description string, 
 				self.commitsHelper.ClearPreservedCommitMessage()
 				return nil
 			})
-			self.unlockCommittedLfsFiles(lfsPathsToUnlock)
+			self.scheduleLfsUnlockOnPush(lockedPaths)
 			return nil
 		})
 }
 
-// lfsPathsToUnlockOnCommit returns the paths of currently-staged files that
-// should be lfs-unlocked once the commit succeeds, or nil when the behavior is
-// disabled or the repo isn't using lfs.
-func (self *WorkingTreeHelper) lfsPathsToUnlockOnCommit() []string {
-	if !self.c.UserConfig().Git.Lfs.UnlockOnCommit {
+// committedLockedLfsPaths returns the paths of the files being committed that we
+// hold an lfs lock on, or nil when unlock-on-push is disabled or the repo isn't
+// using lfs. These are the files whose locks we may release on the next push.
+func (self *WorkingTreeHelper) committedLockedLfsPaths() []string {
+	if self.c.UserConfig().Git.Lfs.UnlockOnPush == "never" {
 		return nil
 	}
 	if !self.c.Git().Lfs.Enabled() {
 		return nil
 	}
 
+	myLocks := make(map[string]bool)
+	for _, lock := range self.c.Model().LfsLocks {
+		if lock.Mine {
+			myLocks[lock.Path] = true
+		}
+	}
+	if len(myLocks) == 0 {
+		return nil
+	}
+
 	return lo.FilterMap(self.c.Model().Files, func(file *models.File, _ int) (string, bool) {
-		return file.Path, file.HasStagedChanges
+		return file.Path, file.HasStagedChanges && myLocks[file.Path]
 	})
 }
 
-// unlockCommittedLfsFiles releases any lfs locks we hold on the just-committed
-// files. Unlocking is best-effort: a file we don't actually own (or that was
-// never locked) is skipped silently so it can never turn a successful commit
-// into a surfaced error.
-func (self *WorkingTreeHelper) unlockCommittedLfsFiles(paths []string) {
+// scheduleLfsUnlockOnPush records (per the unlockOnPush config) that the given
+// files' locks should be released the next time the user pushes. In 'prompt'
+// mode the user is asked first; the lock is only actually released on push.
+func (self *WorkingTreeHelper) scheduleLfsUnlockOnPush(paths []string) {
 	if len(paths) == 0 {
 		return
 	}
 
-	for _, path := range paths {
-		self.c.Git().Lfs.UnlockOwnedQuietly(path)
+	mark := func() {
+		if err := self.c.Git().Lfs.MarkForUnlockOnPush(paths); err != nil {
+			self.c.Log.Errorf("failed to schedule lfs unlock on push: %v", err)
+		}
 	}
 
-	self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.LFS_LOCKS}})
+	switch self.c.UserConfig().Git.Lfs.UnlockOnPush {
+	case "always":
+		mark()
+	case "prompt":
+		self.c.OnUIThread(func() error {
+			self.c.Confirm(types.ConfirmOpts{
+				Title: self.c.Tr.LfsUnlockOnPushTitle,
+				Prompt: utils.ResolvePlaceholderString(
+					self.c.Tr.LfsUnlockOnPushPrompt,
+					map[string]string{"count": fmt.Sprintf("%d", len(paths))},
+				),
+				HandleConfirm: func() error {
+					mark()
+					return nil
+				},
+			})
+			return nil
+		})
+	}
 }
 
 func (self *WorkingTreeHelper) switchFromCommitMessagePanelToEditor(filepath string, forceSkipHooks bool) error {

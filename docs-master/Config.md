@@ -519,11 +519,14 @@ git:
   # Config for git-lfs (Large File Storage) integration, chiefly the file-locking
   # workflow used for unmergeable binary assets (e.g. Unreal Engine projects)
   lfs:
-    # If true, automatically release the git-lfs locks you hold on files as they are
-    # committed. Only locks you own are released; locks held by others are left
-    # untouched. Note that others can't pull your changes until you push, so you may
-    # prefer to keep files locked until after pushing.
-    unlockOnCommit: true
+    # When to release the git-lfs locks you hold on files you commit. Since
+    # teammates can only pull your changes after you push, the lock is released on
+    # push rather than at commit time. 'prompt' asks at commit time whether to
+    # release the committed files' locks on your next push; 'always' schedules it
+    # without asking; 'never' keeps the locks until you unlock them manually. Only
+    # locks you own are ever released.
+    # One of: 'prompt' (default) | 'always' | 'never'
+    unlockOnPush: prompt
 
   # How branches are sorted in the local branches view.
   # One of: 'date' (default) | 'recency' | 'alphabetical'

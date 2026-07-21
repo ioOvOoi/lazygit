@@ -26,12 +26,18 @@ func RenderFileTree(
 	showNumstat bool,
 	customIconsConfig *config.CustomIconsConfig,
 	showRootItem bool,
+	lfsLocks []*models.LfsLock,
 ) []string {
+	locksByPath := make(map[string]*models.LfsLock, len(lfsLocks))
+	for _, lock := range lfsLocks {
+		locksByPath[lock.Path] = lock
+	}
+
 	collapsedPaths := tree.CollapsedPaths()
 	return renderAux(tree.GetRoot().Raw(), collapsedPaths, -1, -1, func(node *filetree.Node[models.File], treeDepth int, visualDepth int, isCollapsed bool) string {
 		fileNode := filetree.NewFileNode(node)
 
-		return getFileLine(isCollapsed, fileNode.GetHasUnstagedChanges(), fileNode.GetHasStagedChanges(), treeDepth, visualDepth, showNumstat, showFileIcons, submoduleConfigs, node, customIconsConfig, showRootItem)
+		return getFileLine(isCollapsed, fileNode.GetHasUnstagedChanges(), fileNode.GetHasStagedChanges(), treeDepth, visualDepth, showNumstat, showFileIcons, submoduleConfigs, node, customIconsConfig, showRootItem, locksByPath)
 	})
 }
 
@@ -121,6 +127,7 @@ func getFileLine(
 	node *filetree.Node[models.File],
 	customIconsConfig *config.CustomIconsConfig,
 	showRootItem bool,
+	locksByPath map[string]*models.LfsLock,
 ) string {
 	name := fileNameAtDepth(node, treeDepth, showRootItem)
 	output := ""
@@ -178,7 +185,30 @@ func getFileLine(
 		}
 	}
 
+	if file != nil {
+		if lock, ok := locksByPath[file.Path]; ok {
+			output += " " + formatLfsLock(lock)
+		}
+	}
+
 	return output
+}
+
+// formatLfsLock renders the git-lfs lock annotation shown next to a locked file
+// in the files panel: a padlock followed by the lock owner. Locks we hold are
+// green; locks held by others are yellow, to warn before editing.
+func formatLfsLock(lock *models.LfsLock) string {
+	lockColor := style.FgYellow
+	if lock.Mine {
+		lockColor = style.FgGreen
+	}
+
+	icon := "LFS"
+	if icons.IsIconEnabled() {
+		icon = "\uf023" // nerd-font padlock
+	}
+
+	return lockColor.Sprintf("%s %s", icon, lock.Owner)
 }
 
 func formatFileStatus(file *models.File, restColor style.TextStyle) string {

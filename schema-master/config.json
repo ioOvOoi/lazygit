@@ -608,7 +608,8 @@
             [
               "files",
               "worktrees",
-              "submodules"
+              "submodules",
+              "lfsLocks"
             ],
             [
               "branches",
@@ -1830,6 +1831,20 @@
             }
           ],
           "default": "S"
+        },
+        "lfsOptions": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": "\u003cc-l\u003e"
         },
         "toggleStagedAll": {
           "oneOf": [
@@ -3612,6 +3627,7 @@
           "files",
           "worktrees",
           "submodules",
+          "lfsLocks",
           "branches",
           "remotes",
           "tags",

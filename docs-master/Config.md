@@ -125,7 +125,7 @@ gui:
   # 'commits' must always be included; they can't be hidden.
   sidePanels:
     - [status]
-    - [files, worktrees, submodules]
+    - [files, worktrees, submodules, lfsLocks]
     - [branches, remotes, tags]
     - [commits, reflog]
     - [stash]
@@ -747,6 +747,7 @@ keybinding:
     refreshFiles: r
     stashAllChanges: s
     viewStashOptions: S
+    lfsOptions: <c-l>
     toggleStagedAll: a
     viewResetOptions: D
     fetch: f

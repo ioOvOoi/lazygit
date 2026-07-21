@@ -130,6 +130,14 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 			OpensMenu:   true,
 		},
 		{
+			Keys:              opts.GetKeys(opts.Config.Files.LfsOptions),
+			Handler:           self.withItem(self.createLfsMenu),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.LfsOptions,
+			Tooltip:           self.c.Tr.LfsOptionsTooltip,
+			OpensMenu:         true,
+		},
+		{
 			Keys:        opts.GetKeys(opts.Config.Files.ToggleStagedAll),
 			Handler:     self.toggleStagedAll,
 			Description: self.c.Tr.ToggleStagedAll,
@@ -1265,6 +1273,43 @@ func (self *FilesController) switchToMerge() error {
 	}
 
 	return self.c.Helpers().MergeConflicts.SwitchToMerge(file.Path)
+}
+
+func (self *FilesController) createLfsMenu(node *filetree.FileNode) error {
+	if !node.GetIsFile() {
+		return errors.New(self.c.Tr.LfsSelectFile)
+	}
+	path := node.GetPath()
+
+	lfsRefresh := func() {
+		self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.LFS_LOCKS, types.FILES}})
+	}
+
+	return self.c.Menu(types.CreateMenuOptions{
+		Title: self.c.Tr.LfsOptions,
+		Items: []*types.MenuItem{
+			{
+				Label:   self.c.Tr.LfsLock,
+				Tooltip: self.c.Tr.LfsLockTooltip,
+				OnPress: func() error {
+					self.c.LogAction(self.c.Tr.Actions.LfsLock)
+					err := self.c.Git().Lfs.Lock(path)
+					lfsRefresh()
+					return err
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsUnlock,
+				Tooltip: self.c.Tr.LfsUnlockTooltip,
+				OnPress: func() error {
+					self.c.LogAction(self.c.Tr.Actions.LfsUnlock)
+					err := self.c.Git().Lfs.Unlock(path)
+					lfsRefresh()
+					return err
+				},
+			},
+		},
+	})
 }
 
 func (self *FilesController) createStashMenu() error {

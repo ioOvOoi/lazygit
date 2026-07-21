@@ -574,6 +574,7 @@ type KeybindingFilesConfig struct {
 	RefreshFiles             Keybinding `yaml:"refreshFiles"`
 	StashAllChanges          Keybinding `yaml:"stashAllChanges"`
 	ViewStashOptions         Keybinding `yaml:"viewStashOptions"`
+	LfsOptions               Keybinding `yaml:"lfsOptions"`
 	ToggleStagedAll          Keybinding `yaml:"toggleStagedAll"`
 	ViewResetOptions         Keybinding `yaml:"viewResetOptions"`
 	Fetch                    Keybinding `yaml:"fetch"`
@@ -864,7 +865,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 			ShrinkSidePanelsToContent: false,
 			SidePanels: []SidePanel{
 				{"status"},
-				{"files", "worktrees", "submodules"},
+				{"files", "worktrees", "submodules", "lfsLocks"},
 				{"branches", "remotes", "tags"},
 				{"commits", "reflog"},
 				{"stash"},
@@ -1089,6 +1090,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				RefreshFiles:             Keybinding{"r"},
 				StashAllChanges:          Keybinding{"s"},
 				ViewStashOptions:         Keybinding{"S"},
+				LfsOptions:               Keybinding{"<c-l>"},
 				ToggleStagedAll:          Keybinding{"a"},
 				ViewResetOptions:         Keybinding{"D"},
 				Fetch:                    Keybinding{"f"},

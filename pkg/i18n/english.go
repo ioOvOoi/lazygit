@@ -746,6 +746,21 @@ type TranslationSet struct {
 	SubCommitsTitle                       string
 	ExitSubview                           string
 	SubmodulesTitle                       string
+	LfsLocksTitle                         string
+	LfsOptions                            string
+	LfsOptionsTooltip                     string
+	LfsLock                               string
+	LfsLockTooltip                        string
+	LfsUnlock                             string
+	LfsUnlockTooltip                      string
+	LfsNoLocks                            string
+	LfsSelectFile                         string
+	LfsLockOwnerYou                       string
+	LfsLockPathColumn                     string
+	LfsLockOwnerColumn                    string
+	LfsLockLockedAtColumn                 string
+	LfsForceUnlockTitle                   string
+	LfsForceUnlockPrompt                  string
 	NavigationTitle                       string
 	SuggestionsCheatsheetTitle            string
 	// Unlike the cheatsheet title above, the real suggestions title has a little message saying press tab to focus
@@ -1086,6 +1101,8 @@ type Actions struct {
 	PopStash                         string
 	ApplyStash                       string
 	DropStash                        string
+	LfsLock                          string
+	LfsUnlock                        string
 	RenameStash                      string
 	RemoveSubmodule                  string
 	ResetSubmodule                   string
@@ -1895,6 +1912,21 @@ func EnglishTranslationSet() *TranslationSet {
 		SubCommitsTitle:                          "Sub-commits",
 		ExitSubview:                              "Exit subview",
 		SubmodulesTitle:                          "Submodules",
+		LfsLocksTitle:                            "LFS Locks",
+		LfsOptions:                               "LFS options",
+		LfsOptionsTooltip:                        "View git-lfs lock actions for the selected file.",
+		LfsLock:                                  "Lock file (LFS)",
+		LfsLockTooltip:                           "Lock the selected file(s) on the git-lfs lock server so no one else can edit them. Useful for unmergeable binary assets (e.g. Unreal Engine .uasset/.umap files).",
+		LfsUnlock:                                "Unlock file (LFS)",
+		LfsUnlockTooltip:                         "Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force.",
+		LfsNoLocks:                               "No LFS locks",
+		LfsSelectFile:                            "Please select a file (not a directory) to lock or unlock",
+		LfsLockOwnerYou:                          "(you)",
+		LfsLockPathColumn:                        "Path:",
+		LfsLockOwnerColumn:                       "Owner:",
+		LfsLockLockedAtColumn:                    "Locked at:",
+		LfsForceUnlockTitle:                      "Force unlock",
+		LfsForceUnlockPrompt:                     "'{{.path}}' is locked by '{{.owner}}'. Are you sure you want to force-unlock it? This may disrupt their work.",
 		NavigationTitle:                          "List panel navigation",
 		SuggestionsCheatsheetTitle:               "Suggestions",
 		SuggestionsTitle:                         "Suggestions (press %s to focus)",
@@ -2191,6 +2223,8 @@ func EnglishTranslationSet() *TranslationSet {
 			PopStash:                         "Pop stash",
 			ApplyStash:                       "Apply stash",
 			DropStash:                        "Drop stash",
+			LfsLock:                          "Lock file (LFS)",
+			LfsUnlock:                        "Unlock file (LFS)",
 			RenameStash:                      "Rename stash",
 			RemoveSubmodule:                  "Remove submodule",
 			ResetSubmodule:                   "Reset submodule",

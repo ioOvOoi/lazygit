@@ -2,11 +2,13 @@ package git_commands
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/samber/lo"
+	"github.com/spf13/afero"
 )
 
 // LfsCommands wraps the subset of `git lfs` we integrate with. The focus is the
@@ -108,6 +110,42 @@ func (self *LfsCommands) Locks() ([]*models.LfsLock, error) {
 	}), nil
 }
 
+// MarkTrackedFiles sets IsLfsTracked on each file that git resolves to the lfs
+// filter (via .gitattributes). It's a no-op when lfs isn't in use, so non-lfs
+// repos never spawn the check-attr process.
+func (self *LfsCommands) MarkTrackedFiles(files []*models.File) {
+	if !self.Enabled() || len(files) == 0 {
+		return
+	}
+
+	paths := lo.Map(files, func(file *models.File, _ int) string {
+		return file.Path
+	})
+
+	cmdObj := self.cmd.New(NewGitCmd("check-attr").Arg("filter", "-z", "--stdin").ToArgv()).DontLog()
+	cmdObj.SetStdin(strings.Join(paths, "\x00"))
+	output, err := cmdObj.RunWithOutput()
+	if err != nil {
+		self.Log.Debugf("lfs: check-attr failed: %v", err)
+		return
+	}
+
+	// Output is NUL-separated triples: path, "filter", value.
+	tracked := make(map[string]bool)
+	fields := strings.Split(output, "\x00")
+	for i := 0; i+2 < len(fields); i += 3 {
+		if fields[i+2] == "lfs" {
+			tracked[fields[i]] = true
+		}
+	}
+
+	for _, file := range files {
+		if tracked[file.Path] {
+			file.IsLfsTracked = true
+		}
+	}
+}
+
 func (self *LfsCommands) getCurrentUser() string {
 	self.currentUserOnce.Do(func() {
 		output, err := self.cmd.New(NewGitCmd("config").Arg("user.name").ToArgv()).
@@ -129,6 +167,68 @@ func (self *LfsCommands) Unlock(path string) error {
 
 func (self *LfsCommands) UnlockForce(path string) error {
 	return self.cmd.New(NewGitCmd("lfs").Arg("unlock", "--force", "--").Arg(path).ToArgv()).Run()
+}
+
+// unlockOnPushFilePath is where we persist the paths whose locks should be
+// released the next time the user pushes. It lives in the worktree's git dir so
+// the intent, recorded at commit time, survives until push (and a restart in
+// between).
+func (self *LfsCommands) unlockOnPushFilePath() string {
+	return filepath.Join(self.repoPaths.WorktreeGitDirPath(), "lazygit-lfs-unlock-on-push")
+}
+
+// MarkForUnlockOnPush records that the given paths' locks should be released on
+// the next push, merging with any already-pending paths.
+func (self *LfsCommands) MarkForUnlockOnPush(paths []string) error {
+	if len(paths) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]bool)
+	merged := []string{}
+	for _, path := range append(self.PendingUnlockOnPush(), paths...) {
+		if path != "" && !seen[path] {
+			seen[path] = true
+			merged = append(merged, path)
+		}
+	}
+
+	content := strings.Join(merged, "\n") + "\n"
+	return afero.WriteFile(self.Fs, self.unlockOnPushFilePath(), []byte(content), 0o644)
+}
+
+// PendingUnlockOnPush returns the paths whose locks are scheduled to be released
+// on the next push.
+func (self *LfsCommands) PendingUnlockOnPush() []string {
+	data, err := afero.ReadFile(self.Fs, self.unlockOnPushFilePath())
+	if err != nil {
+		return nil
+	}
+
+	return lo.Filter(strings.Split(strings.TrimSpace(string(data)), "\n"),
+		func(line string, _ int) bool { return line != "" })
+}
+
+// UnlockPendingOnPush releases the locks recorded for release on push (best
+// effort, only the ones we own) and clears the pending list. Meant to be called
+// after a successful push.
+func (self *LfsCommands) UnlockPendingOnPush() {
+	if !self.Enabled() {
+		return
+	}
+
+	pending := self.PendingUnlockOnPush()
+	if len(pending) == 0 {
+		return
+	}
+
+	for _, path := range pending {
+		self.UnlockOwnedQuietly(path)
+	}
+
+	if err := self.Fs.Remove(self.unlockOnPushFilePath()); err != nil {
+		self.Log.Debugf("lfs: could not clear pending unlock-on-push list: %v", err)
+	}
 }
 
 // UnlockOwnedQuietly attempts to release a lock we hold on the given path,

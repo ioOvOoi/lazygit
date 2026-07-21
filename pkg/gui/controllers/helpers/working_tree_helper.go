@@ -145,6 +145,11 @@ func (self *WorkingTreeHelper) HandleCommitPressWithMessage(initialMessage strin
 }
 
 func (self *WorkingTreeHelper) handleCommit(summary string, description string, forceSkipHooks bool) error {
+	// Capture which staged files to unlock before committing: once the commit
+	// lands and the model refreshes, these files are no longer staged, so we'd
+	// lose track of what was just committed.
+	lfsPathsToUnlock := self.lfsPathsToUnlockOnCommit()
+
 	cmdObj := self.c.Git().Commit.CommitCmdObj(summary, description, forceSkipHooks)
 	self.c.LogAction(self.c.Tr.Actions.Commit)
 	return self.gpgHelper.WithGpgHandlingAndSelectHeadCommit(cmdObj, git_commands.CommitGpgSign, self.c.Tr.CommittingStatus,
@@ -155,8 +160,41 @@ func (self *WorkingTreeHelper) handleCommit(summary string, description string, 
 				self.commitsHelper.ClearPreservedCommitMessage()
 				return nil
 			})
+			self.unlockCommittedLfsFiles(lfsPathsToUnlock)
 			return nil
 		})
+}
+
+// lfsPathsToUnlockOnCommit returns the paths of currently-staged files that
+// should be lfs-unlocked once the commit succeeds, or nil when the behavior is
+// disabled or the repo isn't using lfs.
+func (self *WorkingTreeHelper) lfsPathsToUnlockOnCommit() []string {
+	if !self.c.UserConfig().Git.Lfs.UnlockOnCommit {
+		return nil
+	}
+	if !self.c.Git().Lfs.Enabled() {
+		return nil
+	}
+
+	return lo.FilterMap(self.c.Model().Files, func(file *models.File, _ int) (string, bool) {
+		return file.Path, file.HasStagedChanges
+	})
+}
+
+// unlockCommittedLfsFiles releases any lfs locks we hold on the just-committed
+// files. Unlocking is best-effort: a file we don't actually own (or that was
+// never locked) is skipped silently so it can never turn a successful commit
+// into a surfaced error.
+func (self *WorkingTreeHelper) unlockCommittedLfsFiles(paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+
+	for _, path := range paths {
+		self.c.Git().Lfs.UnlockOwnedQuietly(path)
+	}
+
+	self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.LFS_LOCKS}})
 }
 
 func (self *WorkingTreeHelper) switchFromCommitMessagePanelToEditor(filepath string, forceSkipHooks bool) error {

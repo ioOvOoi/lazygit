@@ -346,6 +346,8 @@ type GitConfig struct {
 	ParseEmoji bool `yaml:"parseEmoji"`
 	// Config for showing the log in the commits view
 	Log LogConfig `yaml:"log"`
+	// Config for git-lfs (Large File Storage) integration, chiefly the file-locking workflow used for unmergeable binary assets (e.g. Unreal Engine projects)
+	Lfs LfsConfig `yaml:"lfs"`
 	// How branches are sorted in the local branches view.
 	// One of: 'date' (default) | 'recency' | 'alphabetical'
 	// Can be changed from within Lazygit with the Sort Order menu (`s`) in the branches panel.
@@ -417,6 +419,11 @@ type LogConfig struct {
 	ShowGraph string `yaml:"showGraph" jsonschema:"enum=always,enum=never,enum=when-maximised"`
 	// displays the whole git graph by default in the commits view (equivalent to passing the `--all` argument to `git log`)
 	ShowWholeGraph bool `yaml:"showWholeGraph"`
+}
+
+type LfsConfig struct {
+	// If true, automatically release the git-lfs locks you hold on files as they are committed. Only locks you own are released; locks held by others are left untouched. Note that others can't pull your changes until you push, so you may prefer to keep files locked until after pushing.
+	UnlockOnCommit bool `yaml:"unlockOnCommit"`
 }
 
 type CommitPrefixConfig struct {
@@ -941,6 +948,9 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				ManualCommit:       false,
 				Args:               "",
 				SquashMergeMessage: "Squash merge {{selectedRef}} into {{currentBranch}}",
+			},
+			Lfs: LfsConfig{
+				UnlockOnCommit: true,
 			},
 			Log: LogConfig{
 				Order:          "topo-order",

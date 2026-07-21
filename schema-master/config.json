@@ -455,6 +455,10 @@
           "$ref": "#/$defs/LogConfig",
           "description": "Config for showing the log in the commits view"
         },
+        "lfs": {
+          "$ref": "#/$defs/LfsConfig",
+          "description": "Config for git-lfs (Large File Storage) integration, chiefly the file-locking workflow used for unmergeable binary assets (e.g. Unreal Engine projects)"
+        },
         "localBranchSortOrder": {
           "type": "string",
           "enum": [
@@ -3437,6 +3441,18 @@
       },
       "additionalProperties": false,
       "type": "object"
+    },
+    "LfsConfig": {
+      "properties": {
+        "unlockOnCommit": {
+          "type": "boolean",
+          "description": "If true, automatically release the git-lfs locks you hold on files as they are committed. Only locks you own are released; locks held by others are left untouched. Note that others can't pull your changes until you push, so you may prefer to keep files locked until after pushing.",
+          "default": true
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Config for git-lfs (Large File Storage) integration, chiefly the file-locking workflow used for unmergeable binary assets (e.g. Unreal Engine projects)"
     },
     "LogConfig": {
       "properties": {

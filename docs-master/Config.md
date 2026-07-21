@@ -516,6 +516,15 @@ git:
     # passing the `--all` argument to `git log`)
     showWholeGraph: false
 
+  # Config for git-lfs (Large File Storage) integration, chiefly the file-locking
+  # workflow used for unmergeable binary assets (e.g. Unreal Engine projects)
+  lfs:
+    # If true, automatically release the git-lfs locks you hold on files as they are
+    # committed. Only locks you own are released; locks held by others are left
+    # untouched. Note that others can't pull your changes until you push, so you may
+    # prefer to keep files locked until after pushing.
+    unlockOnCommit: true
+
   # How branches are sorted in the local branches view.
   # One of: 'date' (default) | 'recency' | 'alphabetical'
   # Can be changed from within Lazygit with the Sort Order menu (`s`) in the

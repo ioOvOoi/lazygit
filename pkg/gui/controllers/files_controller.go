@@ -1354,8 +1354,45 @@ func (self *FilesController) createLfsMenu(node *filetree.FileNode) error {
 					})
 				},
 			},
+			{
+				Label:   self.c.Tr.LfsPrune,
+				Tooltip: self.c.Tr.LfsPruneTooltip,
+				OnPress: self.pruneLfsCache,
+			},
 		},
 	})
+}
+
+// pruneLfsCache frees disk space by deleting local lfs objects that can be
+// re-downloaded from the remote. It previews how many objects would be removed
+// and asks for confirmation first, since a prune is a destructive (if
+// recoverable) operation.
+func (self *FilesController) pruneLfsCache() error {
+	count := self.c.Git().Lfs.PrunableObjectCount()
+	if count == 0 {
+		self.c.Toast(self.c.Tr.LfsNothingToPrune)
+		return nil
+	}
+
+	prompt := self.c.Tr.LfsPruneConfirmUnknown
+	if count > 0 {
+		prompt = utils.ResolvePlaceholderString(
+			self.c.Tr.LfsPruneConfirm,
+			map[string]string{"count": fmt.Sprintf("%d", count)},
+		)
+	}
+
+	self.c.Confirm(types.ConfirmOpts{
+		Title:  self.c.Tr.LfsPrune,
+		Prompt: prompt,
+		HandleConfirm: func() error {
+			return self.c.WithWaitingStatus(self.c.Tr.LfsPruningStatus, func(gocui.Task) error {
+				self.c.LogAction(self.c.Tr.Actions.LfsPrune)
+				return self.c.Git().Lfs.Prune()
+			})
+		},
+	})
+	return nil
 }
 
 func (self *FilesController) createStashMenu() error {

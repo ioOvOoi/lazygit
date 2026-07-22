@@ -3,6 +3,8 @@ package git_commands
 import (
 	"encoding/json"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -182,6 +184,37 @@ func (self *LfsCommands) Fetch() error {
 func (self *LfsCommands) Checkout() error {
 	return self.cmd.New(NewGitCmd("lfs").Arg("checkout").ToArgv()).Run()
 }
+
+// Prune deletes local lfs objects that are no longer needed and can be
+// re-downloaded from the remote, freeing disk space in .git/lfs.
+func (self *LfsCommands) Prune() error {
+	return self.cmd.New(NewGitCmd("lfs").Arg("prune").ToArgv()).Run()
+}
+
+// PrunableObjectCount reports how many local lfs objects `git lfs prune` would
+// delete, by parsing the dry-run summary line ("N local objects, M retained,
+// done."). Returns -1 when the count can't be determined.
+func (self *LfsCommands) PrunableObjectCount() int {
+	output, err := self.cmd.New(NewGitCmd("lfs").Arg("prune", "--dry-run").ToArgv()).
+		DontLog().RunWithOutput()
+	if err != nil {
+		return -1
+	}
+
+	matches := lfsPruneSummaryRegex.FindStringSubmatch(output)
+	if matches == nil {
+		return -1
+	}
+
+	local, err1 := strconv.Atoi(matches[1])
+	retained, err2 := strconv.Atoi(matches[2])
+	if err1 != nil || err2 != nil || local < retained {
+		return -1
+	}
+	return local - retained
+}
+
+var lfsPruneSummaryRegex = regexp.MustCompile(`(\d+) local objects, (\d+) retained`)
 
 // UntrackedLargeFiles returns the staged files that are at least thresholdBytes
 // in size but aren't tracked through the lfs filter — the ones at risk of

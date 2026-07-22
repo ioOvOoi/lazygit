@@ -775,9 +775,15 @@ type TranslationSet struct {
 	LfsFetchAllTooltip                    string
 	LfsCheckout                           string
 	LfsCheckoutTooltip                    string
+	LfsPrune                              string
+	LfsPruneTooltip                       string
+	LfsPruneConfirm                       string
+	LfsPruneConfirmUnknown                string
+	LfsNothingToPrune                     string
 	LfsPullingStatus                      string
 	LfsFetchingStatus                     string
 	LfsCheckingOutStatus                  string
+	LfsPruningStatus                      string
 	NavigationTitle                       string
 	SuggestionsCheatsheetTitle            string
 	// Unlike the cheatsheet title above, the real suggestions title has a little message saying press tab to focus
@@ -1124,6 +1130,7 @@ type Actions struct {
 	LfsPull                          string
 	LfsFetch                         string
 	LfsCheckout                      string
+	LfsPrune                         string
 	RenameStash                      string
 	RemoveSubmodule                  string
 	ResetSubmodule                   string
@@ -1962,9 +1969,15 @@ func EnglishTranslationSet() *TranslationSet {
 		LfsFetchAllTooltip:                       "Download all git-lfs objects for all refs without touching the working tree (git lfs fetch --all).",
 		LfsCheckout:                              "Checkout LFS files",
 		LfsCheckoutTooltip:                       "Replace git-lfs pointer files in the working tree with their already-fetched content (git lfs checkout).",
+		LfsPrune:                                 "Clean up LFS cache (prune)",
+		LfsPruneTooltip:                          "Delete local git-lfs objects that are no longer needed and can be re-downloaded from the remote, freeing disk space (git lfs prune).",
+		LfsPruneConfirm:                          "This will delete {{.count}} local LFS object(s) that can be re-downloaded from the remote, freeing disk space. Continue?",
+		LfsPruneConfirmUnknown:                   "This will delete local LFS objects that are no longer needed (they can be re-downloaded from the remote), freeing disk space. Continue?",
+		LfsNothingToPrune:                        "No LFS objects to clean up",
 		LfsPullingStatus:                         "Downloading LFS objects",
 		LfsFetchingStatus:                        "Fetching LFS objects",
 		LfsCheckingOutStatus:                     "Checking out LFS files",
+		LfsPruningStatus:                         "Cleaning up LFS cache",
 		NavigationTitle:                          "List panel navigation",
 		SuggestionsCheatsheetTitle:               "Suggestions",
 		SuggestionsTitle:                         "Suggestions (press %s to focus)",
@@ -2267,6 +2280,7 @@ func EnglishTranslationSet() *TranslationSet {
 			LfsPull:                          "Pull LFS objects",
 			LfsFetch:                         "Fetch LFS objects",
 			LfsCheckout:                      "Checkout LFS files",
+			LfsPrune:                         "Prune LFS cache",
 			RenameStash:                      "Rename stash",
 			RemoveSubmodule:                  "Remove submodule",
 			ResetSubmodule:                   "Reset submodule",

@@ -149,6 +149,33 @@ func TestLfsContentOps(t *testing.T) {
 	runner.CheckForMissingCalls()
 }
 
+func TestLfsPrune(t *testing.T) {
+	runner := oscommands.NewFakeRunner(t).
+		ExpectGitArgs([]string{"lfs", "prune"}, "", nil)
+	instance := buildLfsCommands(commonDeps{runner: runner})
+
+	assert.NoError(t, instance.Prune())
+	runner.CheckForMissingCalls()
+}
+
+func TestLfsPrunableObjectCount(t *testing.T) {
+	runner := oscommands.NewFakeRunner(t).
+		ExpectGitArgs([]string{"lfs", "prune", "--dry-run"}, "8 local objects, 5 retained, done.\n", nil)
+	instance := buildLfsCommands(commonDeps{runner: runner})
+
+	assert.Equal(t, 3, instance.PrunableObjectCount())
+	runner.CheckForMissingCalls()
+}
+
+func TestLfsPrunableObjectCountUnparseable(t *testing.T) {
+	runner := oscommands.NewFakeRunner(t).
+		ExpectGitArgs([]string{"lfs", "prune", "--dry-run"}, "something unexpected\n", nil)
+	instance := buildLfsCommands(commonDeps{runner: runner})
+
+	assert.Equal(t, -1, instance.PrunableObjectCount())
+	runner.CheckForMissingCalls()
+}
+
 func TestLfsUnlockOnPushRoundTrip(t *testing.T) {
 	instance := buildLfsCommands(commonDeps{fs: afero.NewMemMapFs()})
 

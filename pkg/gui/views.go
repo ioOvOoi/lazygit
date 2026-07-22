@@ -30,6 +30,7 @@ func (gui *Gui) orderedViewNameMappings() []viewNameMapping {
 		{viewPtr: &gui.Views.Snake, name: "snake"},
 		{viewPtr: &gui.Views.Submodules, name: "submodules"},
 		{viewPtr: &gui.Views.Worktrees, name: "worktrees"},
+		{viewPtr: &gui.Views.LfsLocks, name: "lfsLocks"},
 		{viewPtr: &gui.Views.Files, name: "files"},
 		{viewPtr: &gui.Views.Tags, name: "tags"},
 		{viewPtr: &gui.Views.Remotes, name: "remotes"},
@@ -187,6 +188,7 @@ func (gui *Gui) configureViewProperties() {
 	gui.Views.Remotes.Title = gui.c.Tr.RemotesTitle
 	gui.Views.Worktrees.Title = gui.c.Tr.WorktreesTitle
 	gui.Views.Submodules.Title = gui.c.Tr.SubmodulesTitle
+	gui.Views.LfsLocks.Title = gui.c.Tr.LfsLocksTitle
 	gui.Views.Tags.Title = gui.c.Tr.TagsTitle
 	gui.Views.Files.Title = gui.c.Tr.FilesTitle
 	gui.Views.PatchBuilding.Title = gui.c.Tr.Patch

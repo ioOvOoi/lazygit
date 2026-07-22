@@ -130,6 +130,14 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 			OpensMenu:   true,
 		},
 		{
+			Keys:              opts.GetKeys(opts.Config.Files.LfsOptions),
+			Handler:           self.withItem(self.createLfsMenu),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.LfsOptions,
+			Tooltip:           self.c.Tr.LfsOptionsTooltip,
+			OpensMenu:         true,
+		},
+		{
 			Keys:        opts.GetKeys(opts.Config.Files.ToggleStagedAll),
 			Handler:     self.toggleStagedAll,
 			Description: self.c.Tr.ToggleStagedAll,
@@ -1265,6 +1273,126 @@ func (self *FilesController) switchToMerge() error {
 	}
 
 	return self.c.Helpers().MergeConflicts.SwitchToMerge(file.Path)
+}
+
+func (self *FilesController) createLfsMenu(node *filetree.FileNode) error {
+	if !node.GetIsFile() {
+		return errors.New(self.c.Tr.LfsSelectFile)
+	}
+	path := node.GetPath()
+
+	lfsRefresh := func() {
+		self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.LFS_LOCKS, types.FILES}})
+	}
+
+	return self.c.Menu(types.CreateMenuOptions{
+		Title: self.c.Tr.LfsOptions,
+		Items: []*types.MenuItem{
+			{
+				Label:   self.c.Tr.LfsLock,
+				Tooltip: self.c.Tr.LfsLockTooltip,
+				OnPress: func() error {
+					self.c.LogAction(self.c.Tr.Actions.LfsLock)
+					err := self.c.Git().Lfs.Lock(path)
+					lfsRefresh()
+					return err
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsUnlock,
+				Tooltip: self.c.Tr.LfsUnlockTooltip,
+				OnPress: func() error {
+					self.c.LogAction(self.c.Tr.Actions.LfsUnlock)
+					err := self.c.Git().Lfs.Unlock(path)
+					lfsRefresh()
+					return err
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsPullFile,
+				Tooltip: self.c.Tr.LfsPullFileTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsPullingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsPull)
+						err := self.c.Git().Lfs.PullPath(path)
+						self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+						return err
+					})
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsPullAll,
+				Tooltip: self.c.Tr.LfsPullAllTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsPullingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsPull)
+						err := self.c.Git().Lfs.Pull()
+						self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+						return err
+					})
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsFetchAll,
+				Tooltip: self.c.Tr.LfsFetchAllTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsFetchingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsFetch)
+						return self.c.Git().Lfs.Fetch()
+					})
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsCheckout,
+				Tooltip: self.c.Tr.LfsCheckoutTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsCheckingOutStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsCheckout)
+						err := self.c.Git().Lfs.Checkout()
+						self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+						return err
+					})
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsPrune,
+				Tooltip: self.c.Tr.LfsPruneTooltip,
+				OnPress: self.pruneLfsCache,
+			},
+		},
+	})
+}
+
+// pruneLfsCache frees disk space by deleting local lfs objects that can be
+// re-downloaded from the remote. It previews how many objects would be removed
+// and asks for confirmation first, since a prune is a destructive (if
+// recoverable) operation.
+func (self *FilesController) pruneLfsCache() error {
+	count := self.c.Git().Lfs.PrunableObjectCount()
+	if count == 0 {
+		self.c.Toast(self.c.Tr.LfsNothingToPrune)
+		return nil
+	}
+
+	prompt := self.c.Tr.LfsPruneConfirmUnknown
+	if count > 0 {
+		prompt = utils.ResolvePlaceholderString(
+			self.c.Tr.LfsPruneConfirm,
+			map[string]string{"count": fmt.Sprintf("%d", count)},
+		)
+	}
+
+	self.c.Confirm(types.ConfirmOpts{
+		Title:  self.c.Tr.LfsPrune,
+		Prompt: prompt,
+		HandleConfirm: func() error {
+			return self.c.WithWaitingStatus(self.c.Tr.LfsPruningStatus, func(gocui.Task) error {
+				self.c.LogAction(self.c.Tr.Actions.LfsPrune)
+				return self.c.Git().Lfs.Prune()
+			})
+		},
+	})
+	return nil
 }
 
 func (self *FilesController) createStashMenu() error {

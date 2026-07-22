@@ -71,6 +71,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` r `` | Atualizar arquivos |  |
 | `` s `` | Stash | Stash todas as alterações. Para outras variações de armazenamento, use a fixação de teclas de armazenamento. |
 | `` S `` | Ver opções de stash | Ver opções de stash (por exemplo, trash all, stash staged, stash unsttued). |
+| `` <ctrl+l> `` | LFS options | View git-lfs lock actions for the selected file. |
 | `` a `` | Stage completo | Alternar para todos os arquivos na árvore de trabalho |
 | `` <enter> `` | Stage lines / Colapso diretório | Se o item selecionado for um arquivo, o foco na exibição de preparo para o estágio de cenas/linhas individuais. Se o item selecionado for um diretório, recolher/expandi-lo. |
 | `` d `` | Descartar | Exibir opções para descartar alterações para o arquivo selecionado. |
@@ -219,6 +220,14 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 |-----|--------|-------------|
 | `` <enter> `` | Confirmar |  |
 | `` <esc> `` | Fechar/Cancelar |  |
+
+## LFS Locks
+
+| Key | Action | Info |
+|-----|--------|-------------|
+| `` d `` | Unlock file (LFS) | Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force. |
+| `` 0 `` | Focar visualização principal |  |
+| `` / `` | Filtrar a visualização atual por texto |  |
 
 ## Menu
 

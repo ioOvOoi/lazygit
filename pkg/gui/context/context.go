@@ -22,6 +22,7 @@ const (
 	SUB_COMMITS_CONTEXT_KEY              types.ContextKey = "subCommits"
 	COMMIT_FILES_CONTEXT_KEY             types.ContextKey = "commitFiles"
 	STASH_CONTEXT_KEY                    types.ContextKey = "stash"
+	LFS_LOCKS_CONTEXT_KEY                types.ContextKey = "lfsLocks"
 	NORMAL_MAIN_CONTEXT_KEY              types.ContextKey = "normal"
 	NORMAL_SECONDARY_CONTEXT_KEY         types.ContextKey = "normalSecondary"
 	STAGING_MAIN_CONTEXT_KEY             types.ContextKey = "staging"
@@ -64,6 +65,7 @@ var AllContextKeys = []types.ContextKey{
 	SUB_COMMITS_CONTEXT_KEY,
 	COMMIT_FILES_CONTEXT_KEY,
 	STASH_CONTEXT_KEY,
+	LFS_LOCKS_CONTEXT_KEY,
 	NORMAL_MAIN_CONTEXT_KEY,
 	NORMAL_SECONDARY_CONTEXT_KEY,
 	STAGING_MAIN_CONTEXT_KEY,
@@ -95,6 +97,7 @@ type ContextTree struct {
 	Remotes                     *RemotesContext
 	Worktrees                   *WorktreesContext
 	Submodules                  *SubmodulesContext
+	LfsLocks                    *LfsLocksContext
 	RemoteBranches              *RemoteBranchesContext
 	ReflogCommits               *ReflogCommitsContext
 	SubCommits                  *SubCommitsContext
@@ -132,6 +135,7 @@ func (self *ContextTree) Flatten() []types.Context {
 		self.Snake,
 		self.Submodules,
 		self.Worktrees,
+		self.LfsLocks,
 		self.Files,
 		self.SubCommits,
 		self.Remotes,

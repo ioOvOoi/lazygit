@@ -231,6 +231,7 @@ func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFr
 			types.BISECT_INFO,
 			types.STAGING,
 			types.PULL_REQUESTS,
+			types.LFS_LOCKS,
 		})
 	} else {
 		scopeSet = set.NewFromSlice(options.Scope)
@@ -430,6 +431,10 @@ func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFr
 		refresh("worktrees", func() { self.refreshWorktrees(env) })
 	}
 
+	if scopeSet.Includes(types.LFS_LOCKS) {
+		refresh("lfs locks", func() { self.refreshLfsLocks(env) })
+	}
+
 	if scopeSet.Includes(types.STAGING) {
 		refresh("staging", func() {
 			fileWg.Wait()
@@ -585,6 +590,7 @@ func getScopeNames(scopes []types.RefreshableView) []string {
 		types.MERGE_CONFLICTS: "mergeConflicts",
 		types.COMMIT_FILES:    "commitFiles",
 		types.PULL_REQUESTS:   "pullRequests",
+		types.LFS_LOCKS:       "lfsLocks",
 	}
 
 	return lo.Map(scopes, func(scope types.RefreshableView, _ int) string {
@@ -1301,6 +1307,10 @@ func (self *RefreshHelper) refreshStateFiles(captured capturedFilesState, env re
 			Background:         env.backgroundRoutine,
 		})
 
+	// Annotate which files are lfs-tracked so the files panel can flag them.
+	// This is a no-op (and spawns no process) in repos that don't use lfs.
+	self.c.Git().Lfs.MarkTrackedFiles(files)
+
 	conflictFileCount := 0
 	for _, file := range files {
 		if file.HasMergeConflicts {
@@ -1486,6 +1496,30 @@ func (self *RefreshHelper) refreshWorktrees(env refreshEnv) {
 	// branches
 	self.refreshView(self.c.Contexts().Branches, env)
 	self.refreshView(self.c.Contexts().Worktrees, env)
+}
+
+// refreshLfsLocks reloads the git-lfs file locks. `git lfs locks` contacts the
+// lock server, so we skip it on background polls to avoid periodic network
+// traffic; locks refresh on foreground refreshes (user actions and focus) and
+// whenever LFS_LOCKS is explicitly requested (e.g. after a lock/unlock/commit).
+// The files view is re-rendered too, since it annotates locked files.
+func (self *RefreshHelper) refreshLfsLocks(env refreshEnv) {
+	if env.background {
+		return
+	}
+
+	locks, err := self.c.Git().Lfs.Locks()
+	if err != nil {
+		self.c.Log.Warnf("failed to load lfs locks: %v", err)
+		return
+	}
+
+	self.onUIThreadUnlessRepoChanged(env, func() {
+		self.c.Model().LfsLocks = locks
+	})
+
+	self.refreshView(self.c.Contexts().LfsLocks, env)
+	self.refreshView(self.c.Contexts().Files, env)
 }
 
 func (self *RefreshHelper) refreshStashEntries(filterPath string, env refreshEnv) {

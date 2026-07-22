@@ -1,3 +1,34 @@
+# lazygit（Git LFS 适配版 · `dev` 分支）
+
+> 这是 [lazygit](https://github.com/jesseduffield/lazygit) 的一个 fork，在原版基础上**适配 Git LFS 工作流**，面向 Unreal Engine 等以“不可合并的二进制资产”为主的项目。相比原版新增：
+>
+> - **LFS 锁面板**：查看 / 解锁 / 强制解锁仓库中的 LFS 文件锁。
+> - **变更栏锁标注**：LFS 文件带 `LFS` 徽标；被锁定的文件显示 `🔒 <所有者>`（自己持有为绿色，他人为黄色）。
+> - **提交时选择“推送时解锁”**：提交你锁定的文件后，可选择在下次 `push` 成功时自动解锁（配置项 `git.lfs.unlockOnPush`）。
+> - **未跟踪大文件提醒**：提交大文件却未被 LFS 跟踪时提醒，并可一键 `git lfs track`。
+> - **LFS 内容操作**：`pull` / `fetch` / `checkout` / 单文件下载（文件面板 `<c-l>` 菜单）。
+> - **LFS 缓存清理**：一键 `git lfs prune` 释放本地磁盘。
+
+## 安装（本 LFS 版）
+
+**方式一 · 预编译二进制（无需 Go）**：到本仓库 [Releases](https://github.com/ioOvOoi/lazygit/releases) 下载对应平台的包（Windows / macOS / Linux，amd64 与 arm64），解压后即可运行 `lazygit`（Windows 为 `lazygit.exe`）。
+
+**方式二 · 用 Go 从源码安装**（需 Git + Go），一条命令：
+
+```sh
+git clone --depth 1 -b dev https://github.com/ioOvOoi/lazygit lazygit-lfs && cd lazygit-lfs && go install
+```
+
+安装后二进制位于 `$(go env GOPATH)/bin/lazygit`（将该目录加入 `PATH` 即可全局使用）。
+
+> 注意：**不能**用 `go install github.com/ioOvOoi/lazygit@dev` 直接安装。本 fork 的 Go module 路径仍是上游的 `github.com/jesseduffield/lazygit`（保持不变才能持续与上游同步），Go 会因“模块路径不匹配”而拒绝安装，所以需要先 `clone` 再 `go install`。
+
+使用 LFS 锁相关功能前，请确保系统已安装 `git-lfs`（执行一次 `git lfs install`），且远端支持 LFS lock server（如 GitHub）。
+
+---
+
+以下为原版 lazygit 的 README：
+
 <div align="center">
 <sup>Special thanks to:</sup>
 <br>

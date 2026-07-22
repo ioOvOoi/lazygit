@@ -1,0 +1,91 @@
+name: Build LFS Release
+
+# Self-contained release workflow for this Git-LFS fork. Unlike the upstream
+# release.yml (which needs a personal access token and goreleaser), this only
+# uses the built-in GITHUB_TOKEN: it cross-compiles the binaries and attaches
+# them to a GitHub Release. Trigger it by pushing a tag that starts with "lfs-"
+# (e.g. `git tag lfs-v1 && git push origin lfs-v1`) or run it manually from the
+# Actions tab.
+
+on:
+  push:
+    tags:
+      - "lfs-*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag/version to create (e.g. lfs-v1)"
+        required: true
+        default: "lfs-dev"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+
+      - name: Determine version
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build binaries
+        env:
+          VERSION: ${{ steps.vars.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          COMMIT=$(git rev-parse --short HEAD)
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          LDFLAGS="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE} -X main.buildSource=binaryRelease"
+          for combo in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            GOOS=${combo%/*}
+            GOARCH=${combo#*/}
+            bin=lazygit
+            [ "$GOOS" = "windows" ] && bin=lazygit.exe
+            echo "building ${GOOS}/${GOARCH}..."
+            CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "$LDFLAGS" -o "$bin" .
+            pkg="lazygit_${VERSION}_${GOOS}_${GOARCH}"
+            if [ "$GOOS" = "windows" ]; then
+              zip -q "dist/${pkg}.zip" "$bin"
+            else
+              tar czf "dist/${pkg}.tar.gz" "$bin"
+            fi
+            rm -f "$bin"
+          done
+          (cd dist && sha256sum * > checksums.txt)
+          ls -la dist
+
+      - name: Publish release with binaries
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.vars.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # Make sure the tag exists on the remote (a manual run may not have created it).
+          if ! git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            git tag "$TAG"
+            git push origin "refs/tags/${TAG}"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --title "lazygit + Git LFS (${TAG})" \
+              --notes "Automated build: upstream master + Git LFS features. Binaries for Windows / macOS / Linux (amd64 & arm64). See checksums.txt for SHA256 sums."
+          fi

@@ -123,25 +123,70 @@ func (self *WorkingTreeHelper) OpenMergeTool() error {
 
 func (self *WorkingTreeHelper) HandleCommitPressWithMessage(initialMessage string, forceSkipHooks bool) error {
 	return self.WithEnsureCommittableFiles(func() error {
-		self.commitsHelper.OpenCommitMessagePanel(
-			&OpenCommitMessagePanelOpts{
-				CommitIndex:      context.NoCommitIndex,
-				InitialMessage:   initialMessage,
-				SummaryTitle:     self.c.Tr.CommitSummaryTitle,
-				DescriptionTitle: self.c.Tr.CommitDescriptionTitle,
-				PreserveMessage:  true,
-				OnConfirm: func(summary string, description string) error {
-					return self.handleCommit(summary, description, forceSkipHooks)
+		return self.withUntrackedLargeFileCheck(func() error {
+			self.commitsHelper.OpenCommitMessagePanel(
+				&OpenCommitMessagePanelOpts{
+					CommitIndex:      context.NoCommitIndex,
+					InitialMessage:   initialMessage,
+					SummaryTitle:     self.c.Tr.CommitSummaryTitle,
+					DescriptionTitle: self.c.Tr.CommitDescriptionTitle,
+					PreserveMessage:  true,
+					OnConfirm: func(summary string, description string) error {
+						return self.handleCommit(summary, description, forceSkipHooks)
+					},
+					OnSwitchToEditor: func(filepath string) error {
+						return self.switchFromCommitMessagePanelToEditor(filepath, forceSkipHooks)
+					},
+					ForceSkipHooks:  forceSkipHooks,
+					SkipHooksPrefix: self.c.UserConfig().Git.SkipHookPrefix,
 				},
-				OnSwitchToEditor: func(filepath string) error {
-					return self.switchFromCommitMessagePanelToEditor(filepath, forceSkipHooks)
-				},
-				ForceSkipHooks:  forceSkipHooks,
-				SkipHooksPrefix: self.c.UserConfig().Git.SkipHookPrefix,
-			},
-		)
+			)
 
-		return nil
+			return nil
+		})
+	})
+}
+
+// withUntrackedLargeFileCheck runs `then` unless there are staged files that are
+// large but not lfs-tracked, in which case it first asks the user whether to
+// start tracking them with lfs (the common fix for a missing .gitattributes
+// pattern) before continuing to commit.
+func (self *WorkingTreeHelper) withUntrackedLargeFileCheck(then func() error) error {
+	cfg := self.c.UserConfig().Git.Lfs
+	if !cfg.WarnUntrackedLargeFiles {
+		return then()
+	}
+
+	thresholdBytes := int64(cfg.LargeFileThresholdMb) * 1024 * 1024
+	candidates := self.c.Git().Lfs.UntrackedLargeFiles(self.c.Model().Files, thresholdBytes)
+	if len(candidates) == 0 {
+		return then()
+	}
+
+	paths := lo.Map(candidates, func(file *models.File, _ int) string { return file.Path })
+	return self.c.Menu(types.CreateMenuOptions{
+		Title: self.c.Tr.LfsUntrackedLargeFilesTitle,
+		Prompt: utils.ResolvePlaceholderString(
+			self.c.Tr.LfsUntrackedLargeFilesPrompt,
+			map[string]string{"files": strings.Join(paths, "\n")},
+		),
+		Items: []*types.MenuItem{
+			{
+				Label: self.c.Tr.LfsTrackAndCommit,
+				OnPress: func() error {
+					self.c.LogAction(self.c.Tr.Actions.LfsTrack)
+					if err := self.c.Git().Lfs.TrackAndRestage(candidates); err != nil {
+						return err
+					}
+					self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+					return then()
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsCommitAnyway,
+				OnPress: then,
+			},
+		},
 	})
 }
 

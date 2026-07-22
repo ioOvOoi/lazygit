@@ -763,6 +763,10 @@ type TranslationSet struct {
 	LfsForceUnlockPrompt                  string
 	LfsUnlockOnPushTitle                  string
 	LfsUnlockOnPushPrompt                 string
+	LfsUntrackedLargeFilesTitle           string
+	LfsUntrackedLargeFilesPrompt          string
+	LfsTrackAndCommit                     string
+	LfsCommitAnyway                       string
 	NavigationTitle                       string
 	SuggestionsCheatsheetTitle            string
 	// Unlike the cheatsheet title above, the real suggestions title has a little message saying press tab to focus
@@ -1105,6 +1109,7 @@ type Actions struct {
 	DropStash                        string
 	LfsLock                          string
 	LfsUnlock                        string
+	LfsTrack                         string
 	RenameStash                      string
 	RemoveSubmodule                  string
 	ResetSubmodule                   string
@@ -1931,6 +1936,10 @@ func EnglishTranslationSet() *TranslationSet {
 		LfsForceUnlockPrompt:                     "'{{.path}}' is locked by '{{.owner}}'. Are you sure you want to force-unlock it? This may disrupt their work.",
 		LfsUnlockOnPushTitle:                     "Unlock LFS files on push",
 		LfsUnlockOnPushPrompt:                    "Release your git-lfs lock on {{.count}} committed file(s) the next time you push? Others can only pull your changes after you push, so unlocking then avoids conflicts.",
+		LfsUntrackedLargeFilesTitle:              "Large files not tracked by LFS",
+		LfsUntrackedLargeFilesPrompt:             "These staged files are large but aren't tracked by Git LFS:\n\n{{.files}}\n\nCommitting them as plain git objects can bloat the repository. Track them with LFS first?",
+		LfsTrackAndCommit:                        "Track with LFS, then commit",
+		LfsCommitAnyway:                          "Commit anyway",
 		NavigationTitle:                          "List panel navigation",
 		SuggestionsCheatsheetTitle:               "Suggestions",
 		SuggestionsTitle:                         "Suggestions (press %s to focus)",
@@ -2229,6 +2238,7 @@ func EnglishTranslationSet() *TranslationSet {
 			DropStash:                        "Drop stash",
 			LfsLock:                          "Lock file (LFS)",
 			LfsUnlock:                        "Unlock file (LFS)",
+			LfsTrack:                         "Track file with LFS",
 			RenameStash:                      "Rename stash",
 			RemoveSubmodule:                  "Remove submodule",
 			ResetSubmodule:                   "Reset submodule",

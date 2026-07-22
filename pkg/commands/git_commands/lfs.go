@@ -161,6 +161,62 @@ func (self *LfsCommands) Lock(path string) error {
 	return self.cmd.New(NewGitCmd("lfs").Arg("lock", "--").Arg(path).ToArgv()).Run()
 }
 
+// UntrackedLargeFiles returns the staged files that are at least thresholdBytes
+// in size but aren't tracked through the lfs filter — the ones at risk of
+// bloating the repo if committed as plain git objects (a common mistake with
+// large binary assets). Returns nil when lfs isn't in use for this repo.
+func (self *LfsCommands) UntrackedLargeFiles(files []*models.File, thresholdBytes int64) []*models.File {
+	if !self.Enabled() || thresholdBytes <= 0 {
+		return nil
+	}
+
+	worktree := self.repoPaths.WorktreePath()
+	return lo.Filter(files, func(file *models.File, _ int) bool {
+		if !file.HasStagedChanges || file.IsLfsTracked || file.Deleted {
+			return false
+		}
+		info, err := self.Fs.Stat(filepath.Join(worktree, file.Path))
+		if err != nil {
+			return false
+		}
+		return info.Size() >= thresholdBytes
+	})
+}
+
+// TrackAndRestage adds each file to lfs tracking (by extension, or by exact path
+// when there's no extension) and re-stages the files so their staged content
+// becomes an lfs pointer rather than the raw blob.
+func (self *LfsCommands) TrackAndRestage(files []*models.File) error {
+	seen := make(map[string]bool)
+	patterns := []string{}
+	for _, file := range files {
+		pattern := lfsTrackPatternForPath(file.Path)
+		if !seen[pattern] {
+			seen[pattern] = true
+			patterns = append(patterns, pattern)
+		}
+	}
+
+	for _, pattern := range patterns {
+		if err := self.cmd.New(NewGitCmd("lfs").Arg("track").Arg(pattern).ToArgv()).Run(); err != nil {
+			return err
+		}
+	}
+
+	paths := []string{".gitattributes"}
+	for _, file := range files {
+		paths = append(paths, file.Path)
+	}
+	return runGitCmdOnPaths("add", paths, self.cmd)
+}
+
+func lfsTrackPatternForPath(path string) string {
+	if ext := filepath.Ext(path); ext != "" {
+		return "*" + ext
+	}
+	return path
+}
+
 func (self *LfsCommands) Unlock(path string) error {
 	return self.cmd.New(NewGitCmd("lfs").Arg("unlock", "--").Arg(path).ToArgv()).Run()
 }

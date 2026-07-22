@@ -425,6 +425,10 @@ type LfsConfig struct {
 	// When to release the git-lfs locks you hold on files you commit. Since teammates can only pull your changes after you push, the lock is released on push rather than at commit time. 'prompt' asks at commit time whether to release the committed files' locks on your next push; 'always' schedules it without asking; 'never' keeps the locks until you unlock them manually. Only locks you own are ever released.
 	// One of: 'prompt' (default) | 'always' | 'never'
 	UnlockOnPush string `yaml:"unlockOnPush" jsonschema:"enum=prompt,enum=always,enum=never"`
+	// If true, warn before committing a staged file that is at least largeFileThresholdMb in size but isn't tracked through the git-lfs filter, and offer to start tracking it with lfs. Only applies in repos that already use lfs. This helps avoid accidentally committing large binary assets (e.g. Unreal Engine files) as plain git objects when a .gitattributes pattern is missing.
+	WarnUntrackedLargeFiles bool `yaml:"warnUntrackedLargeFiles"`
+	// The size threshold, in megabytes, above which an untracked file triggers the warnUntrackedLargeFiles warning.
+	LargeFileThresholdMb int `yaml:"largeFileThresholdMb"`
 }
 
 type CommitPrefixConfig struct {
@@ -951,7 +955,9 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				SquashMergeMessage: "Squash merge {{selectedRef}} into {{currentBranch}}",
 			},
 			Lfs: LfsConfig{
-				UnlockOnPush: "prompt",
+				UnlockOnPush:            "prompt",
+				WarnUntrackedLargeFiles: true,
+				LargeFileThresholdMb:    5,
 			},
 			Log: LogConfig{
 				Order:          "topo-order",

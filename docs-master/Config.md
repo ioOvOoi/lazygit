@@ -528,6 +528,17 @@ git:
     # One of: 'prompt' (default) | 'always' | 'never'
     unlockOnPush: prompt
 
+    # If true, warn before committing a staged file that is at least
+    # largeFileThresholdMb in size but isn't tracked through the git-lfs filter, and
+    # offer to start tracking it with lfs. Only applies in repos that already use
+    # lfs. This helps avoid accidentally committing large binary assets (e.g. Unreal
+    # Engine files) as plain git objects when a .gitattributes pattern is missing.
+    warnUntrackedLargeFiles: true
+
+    # The size threshold, in megabytes, above which an untracked file triggers the
+    # warnUntrackedLargeFiles warning.
+    largeFileThresholdMb: 5
+
   # How branches are sorted in the local branches view.
   # One of: 'date' (default) | 'recency' | 'alphabetical'
   # Can be changed from within Lazygit with the Sort Order menu (`s`) in the

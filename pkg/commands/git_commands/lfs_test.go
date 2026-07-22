@@ -90,6 +90,49 @@ func TestLfsMarkTrackedFiles(t *testing.T) {
 	runner.CheckForMissingCalls()
 }
 
+func TestLfsUntrackedLargeFiles(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	assert.NoError(t, afero.WriteFile(fs, "big.bin", make([]byte, 2*1024*1024), 0o644))
+	assert.NoError(t, afero.WriteFile(fs, "small.txt", []byte("hi"), 0o644))
+
+	runner := oscommands.NewFakeRunner(t).
+		ExpectGitArgs([]string{"lfs", "version"}, "git-lfs/3.7.1", nil).
+		ExpectGitArgs([]string{"lfs", "track"}, "Listing tracked patterns\n    *.uasset (.gitattributes)\nListing excluded patterns\n", nil)
+	instance := buildLfsCommands(commonDeps{runner: runner, fs: fs, repoPaths: MockRepoPaths(".")})
+
+	files := []*models.File{
+		{Path: "big.bin", HasStagedChanges: true},
+		{Path: "small.txt", HasStagedChanges: true},
+		// already lfs-tracked, so skipped regardless of size
+		{Path: "tracked.uasset", HasStagedChanges: true, IsLfsTracked: true},
+		// not staged, so skipped
+		{Path: "big.bin", HasStagedChanges: false},
+	}
+
+	result := instance.UntrackedLargeFiles(files, 1*1024*1024)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "big.bin", result[0].Path)
+
+	runner.CheckForMissingCalls()
+}
+
+func TestLfsTrackAndRestage(t *testing.T) {
+	runner := oscommands.NewFakeRunner(t).
+		ExpectGitArgs([]string{"lfs", "track", "*.uasset"}, "", nil).
+		ExpectGitArgs([]string{"lfs", "track", "*.bin"}, "", nil).
+		ExpectGitArgs([]string{"add", "--", ".gitattributes", "a.uasset", "b.uasset", "c.bin"}, "", nil)
+	instance := buildLfsCommands(commonDeps{runner: runner})
+
+	err := instance.TrackAndRestage([]*models.File{
+		{Path: "a.uasset"},
+		{Path: "b.uasset"}, // same extension: pattern de-duplicated
+		{Path: "c.bin"},
+	})
+	assert.NoError(t, err)
+
+	runner.CheckForMissingCalls()
+}
+
 func TestLfsUnlockOnPushRoundTrip(t *testing.T) {
 	instance := buildLfsCommands(commonDeps{fs: afero.NewMemMapFs()})
 

@@ -767,6 +767,17 @@ type TranslationSet struct {
 	LfsUntrackedLargeFilesPrompt          string
 	LfsTrackAndCommit                     string
 	LfsCommitAnyway                       string
+	LfsPullFile                           string
+	LfsPullFileTooltip                    string
+	LfsPullAll                            string
+	LfsPullAllTooltip                     string
+	LfsFetchAll                           string
+	LfsFetchAllTooltip                    string
+	LfsCheckout                           string
+	LfsCheckoutTooltip                    string
+	LfsPullingStatus                      string
+	LfsFetchingStatus                     string
+	LfsCheckingOutStatus                  string
 	NavigationTitle                       string
 	SuggestionsCheatsheetTitle            string
 	// Unlike the cheatsheet title above, the real suggestions title has a little message saying press tab to focus
@@ -1110,6 +1121,9 @@ type Actions struct {
 	LfsLock                          string
 	LfsUnlock                        string
 	LfsTrack                         string
+	LfsPull                          string
+	LfsFetch                         string
+	LfsCheckout                      string
 	RenameStash                      string
 	RemoveSubmodule                  string
 	ResetSubmodule                   string
@@ -1940,6 +1954,17 @@ func EnglishTranslationSet() *TranslationSet {
 		LfsUntrackedLargeFilesPrompt:             "These staged files are large but aren't tracked by Git LFS:\n\n{{.files}}\n\nCommitting them as plain git objects can bloat the repository. Track them with LFS first?",
 		LfsTrackAndCommit:                        "Track with LFS, then commit",
 		LfsCommitAnyway:                          "Commit anyway",
+		LfsPullFile:                              "Download this file (lfs pull)",
+		LfsPullFileTooltip:                       "Download the git-lfs content for the selected file (git lfs pull for this path).",
+		LfsPullAll:                               "Pull all LFS objects",
+		LfsPullAllTooltip:                        "Download and check out the git-lfs content for the current ref (git lfs pull).",
+		LfsFetchAll:                              "Fetch all LFS objects",
+		LfsFetchAllTooltip:                       "Download all git-lfs objects for all refs without touching the working tree (git lfs fetch --all).",
+		LfsCheckout:                              "Checkout LFS files",
+		LfsCheckoutTooltip:                       "Replace git-lfs pointer files in the working tree with their already-fetched content (git lfs checkout).",
+		LfsPullingStatus:                         "Downloading LFS objects",
+		LfsFetchingStatus:                        "Fetching LFS objects",
+		LfsCheckingOutStatus:                     "Checking out LFS files",
 		NavigationTitle:                          "List panel navigation",
 		SuggestionsCheatsheetTitle:               "Suggestions",
 		SuggestionsTitle:                         "Suggestions (press %s to focus)",
@@ -2239,6 +2264,9 @@ func EnglishTranslationSet() *TranslationSet {
 			LfsLock:                          "Lock file (LFS)",
 			LfsUnlock:                        "Unlock file (LFS)",
 			LfsTrack:                         "Track file with LFS",
+			LfsPull:                          "Pull LFS objects",
+			LfsFetch:                         "Fetch LFS objects",
+			LfsCheckout:                      "Checkout LFS files",
 			RenameStash:                      "Rename stash",
 			RemoveSubmodule:                  "Remove submodule",
 			ResetSubmodule:                   "Reset submodule",

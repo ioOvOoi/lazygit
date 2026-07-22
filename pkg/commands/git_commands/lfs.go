@@ -161,6 +161,28 @@ func (self *LfsCommands) Lock(path string) error {
 	return self.cmd.New(NewGitCmd("lfs").Arg("lock", "--").Arg(path).ToArgv()).Run()
 }
 
+// Pull downloads and checks out the lfs content for the current ref.
+func (self *LfsCommands) Pull() error {
+	return self.cmd.New(NewGitCmd("lfs").Arg("pull").ToArgv()).Run()
+}
+
+// PullPath downloads the lfs content for a single path.
+func (self *LfsCommands) PullPath(path string) error {
+	return self.cmd.New(NewGitCmd("lfs").Arg("pull").Arg("--include=" + path).ToArgv()).Run()
+}
+
+// Fetch downloads all lfs objects for all refs without touching the working
+// tree.
+func (self *LfsCommands) Fetch() error {
+	return self.cmd.New(NewGitCmd("lfs").Arg("fetch", "--all").ToArgv()).Run()
+}
+
+// Checkout replaces lfs pointer files in the working tree with their content
+// (for objects that have already been fetched).
+func (self *LfsCommands) Checkout() error {
+	return self.cmd.New(NewGitCmd("lfs").Arg("checkout").ToArgv()).Run()
+}
+
 // UntrackedLargeFiles returns the staged files that are at least thresholdBytes
 // in size but aren't tracked through the lfs filter — the ones at risk of
 // bloating the repo if committed as plain git objects (a common mistake with

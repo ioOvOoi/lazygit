@@ -1308,6 +1308,52 @@ func (self *FilesController) createLfsMenu(node *filetree.FileNode) error {
 					return err
 				},
 			},
+			{
+				Label:   self.c.Tr.LfsPullFile,
+				Tooltip: self.c.Tr.LfsPullFileTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsPullingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsPull)
+						err := self.c.Git().Lfs.PullPath(path)
+						self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+						return err
+					})
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsPullAll,
+				Tooltip: self.c.Tr.LfsPullAllTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsPullingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsPull)
+						err := self.c.Git().Lfs.Pull()
+						self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+						return err
+					})
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsFetchAll,
+				Tooltip: self.c.Tr.LfsFetchAllTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsFetchingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsFetch)
+						return self.c.Git().Lfs.Fetch()
+					})
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsCheckout,
+				Tooltip: self.c.Tr.LfsCheckoutTooltip,
+				OnPress: func() error {
+					return self.c.WithWaitingStatus(self.c.Tr.LfsCheckingOutStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsCheckout)
+						err := self.c.Git().Lfs.Checkout()
+						self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+						return err
+					})
+				},
+			},
 		},
 	})
 }

@@ -133,6 +133,22 @@ func TestLfsTrackAndRestage(t *testing.T) {
 	runner.CheckForMissingCalls()
 }
 
+func TestLfsContentOps(t *testing.T) {
+	runner := oscommands.NewFakeRunner(t).
+		ExpectGitArgs([]string{"lfs", "pull"}, "", nil).
+		ExpectGitArgs([]string{"lfs", "pull", "--include=Content/Hero.uasset"}, "", nil).
+		ExpectGitArgs([]string{"lfs", "fetch", "--all"}, "", nil).
+		ExpectGitArgs([]string{"lfs", "checkout"}, "", nil)
+	instance := buildLfsCommands(commonDeps{runner: runner})
+
+	assert.NoError(t, instance.Pull())
+	assert.NoError(t, instance.PullPath("Content/Hero.uasset"))
+	assert.NoError(t, instance.Fetch())
+	assert.NoError(t, instance.Checkout())
+
+	runner.CheckForMissingCalls()
+}
+
 func TestLfsUnlockOnPushRoundTrip(t *testing.T) {
 	instance := buildLfsCommands(commonDeps{fs: afero.NewMemMapFs()})
 

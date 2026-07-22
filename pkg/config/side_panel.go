@@ -19,6 +19,7 @@ var ValidSidePanelTabs = []string{
 	"files",
 	"worktrees",
 	"submodules",
+	"lfsLocks",
 	"branches",
 	"remotes",
 	"tags",

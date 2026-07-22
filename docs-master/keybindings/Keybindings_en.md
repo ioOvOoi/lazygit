@@ -148,6 +148,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` r `` | Refresh files |  |
 | `` s `` | Stash | Stash all changes. For other variations of stashing, use the view stash options keybinding. |
 | `` S `` | View stash options | View stash options (e.g. stash all, stash staged, stash unstaged). |
+| `` <ctrl+l> `` | LFS options | View git-lfs lock actions for the selected file. |
 | `` a `` | Stage all | Toggle staged/unstaged for all files in working tree. |
 | `` <enter> `` | Stage lines / Collapse directory | If the selected item is a file, focus the staging view so you can stage individual hunks/lines. If the selected item is a directory, collapse/expand it. |
 | `` d `` | Discard | View options for discarding changes to the selected file. |
@@ -168,6 +169,14 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 |-----|--------|-------------|
 | `` <enter> `` | Confirm |  |
 | `` <esc> `` | Close/Cancel |  |
+
+## LFS Locks
+
+| Key | Action | Info |
+|-----|--------|-------------|
+| `` d `` | Unlock file (LFS) | Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force. |
+| `` 0 `` | Focus main view |  |
+| `` / `` | Filter the current view by text |  |
 
 ## Local branches
 

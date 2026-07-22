@@ -13,6 +13,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
+	"github.com/jesseduffield/lazygit/pkg/utils"
 	"github.com/samber/lo"
 )
 
@@ -122,29 +123,79 @@ func (self *WorkingTreeHelper) OpenMergeTool() error {
 
 func (self *WorkingTreeHelper) HandleCommitPressWithMessage(initialMessage string, forceSkipHooks bool) error {
 	return self.WithEnsureCommittableFiles(func() error {
-		self.commitsHelper.OpenCommitMessagePanel(
-			&OpenCommitMessagePanelOpts{
-				CommitIndex:      context.NoCommitIndex,
-				InitialMessage:   initialMessage,
-				SummaryTitle:     self.c.Tr.CommitSummaryTitle,
-				DescriptionTitle: self.c.Tr.CommitDescriptionTitle,
-				PreserveMessage:  true,
-				OnConfirm: func(summary string, description string) error {
-					return self.handleCommit(summary, description, forceSkipHooks)
+		return self.withUntrackedLargeFileCheck(func() error {
+			self.commitsHelper.OpenCommitMessagePanel(
+				&OpenCommitMessagePanelOpts{
+					CommitIndex:      context.NoCommitIndex,
+					InitialMessage:   initialMessage,
+					SummaryTitle:     self.c.Tr.CommitSummaryTitle,
+					DescriptionTitle: self.c.Tr.CommitDescriptionTitle,
+					PreserveMessage:  true,
+					OnConfirm: func(summary string, description string) error {
+						return self.handleCommit(summary, description, forceSkipHooks)
+					},
+					OnSwitchToEditor: func(filepath string) error {
+						return self.switchFromCommitMessagePanelToEditor(filepath, forceSkipHooks)
+					},
+					ForceSkipHooks:  forceSkipHooks,
+					SkipHooksPrefix: self.c.UserConfig().Git.SkipHookPrefix,
 				},
-				OnSwitchToEditor: func(filepath string) error {
-					return self.switchFromCommitMessagePanelToEditor(filepath, forceSkipHooks)
-				},
-				ForceSkipHooks:  forceSkipHooks,
-				SkipHooksPrefix: self.c.UserConfig().Git.SkipHookPrefix,
-			},
-		)
+			)
 
-		return nil
+			return nil
+		})
+	})
+}
+
+// withUntrackedLargeFileCheck runs `then` unless there are staged files that are
+// large but not lfs-tracked, in which case it first asks the user whether to
+// start tracking them with lfs (the common fix for a missing .gitattributes
+// pattern) before continuing to commit.
+func (self *WorkingTreeHelper) withUntrackedLargeFileCheck(then func() error) error {
+	cfg := self.c.UserConfig().Git.Lfs
+	if !cfg.WarnUntrackedLargeFiles {
+		return then()
+	}
+
+	thresholdBytes := int64(cfg.LargeFileThresholdMb) * 1024 * 1024
+	candidates := self.c.Git().Lfs.UntrackedLargeFiles(self.c.Model().Files, thresholdBytes)
+	if len(candidates) == 0 {
+		return then()
+	}
+
+	paths := lo.Map(candidates, func(file *models.File, _ int) string { return file.Path })
+	return self.c.Menu(types.CreateMenuOptions{
+		Title: self.c.Tr.LfsUntrackedLargeFilesTitle,
+		Prompt: utils.ResolvePlaceholderString(
+			self.c.Tr.LfsUntrackedLargeFilesPrompt,
+			map[string]string{"files": strings.Join(paths, "\n")},
+		),
+		Items: []*types.MenuItem{
+			{
+				Label: self.c.Tr.LfsTrackAndCommit,
+				OnPress: func() error {
+					self.c.LogAction(self.c.Tr.Actions.LfsTrack)
+					if err := self.c.Git().Lfs.TrackAndRestage(candidates); err != nil {
+						return err
+					}
+					self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.FILES}})
+					return then()
+				},
+			},
+			{
+				Label:   self.c.Tr.LfsCommitAnyway,
+				OnPress: then,
+			},
+		},
 	})
 }
 
 func (self *WorkingTreeHelper) handleCommit(summary string, description string, forceSkipHooks bool) error {
+	// Capture which committed files we hold lfs locks on before committing: once
+	// the commit lands and the model refreshes, these files are no longer
+	// staged, so we'd lose track of what was just committed.
+	lockedPaths := self.committedLockedLfsPaths()
+
 	cmdObj := self.c.Git().Commit.CommitCmdObj(summary, description, forceSkipHooks)
 	self.c.LogAction(self.c.Tr.Actions.Commit)
 	return self.gpgHelper.WithGpgHandlingAndSelectHeadCommit(cmdObj, git_commands.CommitGpgSign, self.c.Tr.CommittingStatus,
@@ -155,8 +206,70 @@ func (self *WorkingTreeHelper) handleCommit(summary string, description string, 
 				self.commitsHelper.ClearPreservedCommitMessage()
 				return nil
 			})
+			self.scheduleLfsUnlockOnPush(lockedPaths)
 			return nil
 		})
+}
+
+// committedLockedLfsPaths returns the paths of the files being committed that we
+// hold an lfs lock on, or nil when unlock-on-push is disabled or the repo isn't
+// using lfs. These are the files whose locks we may release on the next push.
+func (self *WorkingTreeHelper) committedLockedLfsPaths() []string {
+	if self.c.UserConfig().Git.Lfs.UnlockOnPush == "never" {
+		return nil
+	}
+	if !self.c.Git().Lfs.Enabled() {
+		return nil
+	}
+
+	myLocks := make(map[string]bool)
+	for _, lock := range self.c.Model().LfsLocks {
+		if lock.Mine {
+			myLocks[lock.Path] = true
+		}
+	}
+	if len(myLocks) == 0 {
+		return nil
+	}
+
+	return lo.FilterMap(self.c.Model().Files, func(file *models.File, _ int) (string, bool) {
+		return file.Path, file.HasStagedChanges && myLocks[file.Path]
+	})
+}
+
+// scheduleLfsUnlockOnPush records (per the unlockOnPush config) that the given
+// files' locks should be released the next time the user pushes. In 'prompt'
+// mode the user is asked first; the lock is only actually released on push.
+func (self *WorkingTreeHelper) scheduleLfsUnlockOnPush(paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+
+	mark := func() {
+		if err := self.c.Git().Lfs.MarkForUnlockOnPush(paths); err != nil {
+			self.c.Log.Errorf("failed to schedule lfs unlock on push: %v", err)
+		}
+	}
+
+	switch self.c.UserConfig().Git.Lfs.UnlockOnPush {
+	case "always":
+		mark()
+	case "prompt":
+		self.c.OnUIThread(func() error {
+			self.c.Confirm(types.ConfirmOpts{
+				Title: self.c.Tr.LfsUnlockOnPushTitle,
+				Prompt: utils.ResolvePlaceholderString(
+					self.c.Tr.LfsUnlockOnPushPrompt,
+					map[string]string{"count": fmt.Sprintf("%d", len(paths))},
+				),
+				HandleConfirm: func() error {
+					mark()
+					return nil
+				},
+			})
+			return nil
+		})
+	}
 }
 
 func (self *WorkingTreeHelper) switchFromCommitMessagePanelToEditor(filepath string, forceSkipHooks bool) error {

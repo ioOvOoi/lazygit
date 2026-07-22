@@ -27,6 +27,7 @@ func NewContextTree(c *ContextCommon) *ContextTree {
 		),
 		Files:           NewWorkingTreeContext(c),
 		Submodules:      NewSubmodulesContext(c),
+		LfsLocks:        NewLfsLocksContext(c),
 		Menu:            NewMenuContext(c),
 		Remotes:         NewRemotesContext(c),
 		Worktrees:       NewWorktreesContext(c),

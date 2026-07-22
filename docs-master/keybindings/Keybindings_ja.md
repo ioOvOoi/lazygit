@@ -59,6 +59,14 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` <enter> `` | 確認 |  |
 | `` <esc> `` | 閉じる/キャンセル |  |
 
+## LFS Locks
+
+| Key | Action | Info |
+|-----|--------|-------------|
+| `` d `` | Unlock file (LFS) | Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force. |
+| `` 0 `` | メインビューにフォーカス |  |
+| `` / `` | 現在のビューをテキストでフィルタリング |  |
+
 ## コミット
 
 | Key | Action | Info |
@@ -230,6 +238,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` r `` | ファイルを更新 |  |
 | `` s `` | スタッシュ | すべての変更をスタッシュします。スタッシュの他のバリエーションについては、スタッシュオプションを表示するキーバインディングを使用してください。 |
 | `` S `` | スタッシュオプションを表示 | スタッシュオプション（すべてをスタッシュ、ステージされた変更をスタッシュ、ステージされていない変更をスタッシュなど）を表示します。 |
+| `` <ctrl+l> `` | LFS options | View git-lfs lock actions for the selected file. |
 | `` a `` | すべてステージ | ワーキングツリー内のすべてのファイルのステージ/アンステージを切り替えます。 |
 | `` <enter> `` | 行をステージ / ディレクトリを折りたたむ | 選択された項目がファイルの場合、個々のハンク/行をステージできるようにステージングビューにフォーカスします。選択された項目がディレクトリの場合、ディレクトリを折りたたむ/展開します。 |
 | `` d `` | 破棄 | 選択したファイルの変更を破棄するオプションを表示します。 |

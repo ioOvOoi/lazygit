@@ -52,6 +52,14 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` ] `` | 下一个标签 |  |
 | `` [ `` | 上一个标签 |  |
 
+## LFS Locks
+
+| Key | Action | Info |
+|-----|--------|-------------|
+| `` d `` | Unlock file (LFS) | Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force. |
+| `` 0 `` | 聚焦主视图 |  |
+| `` / `` | 通过文本过滤当前视图 |  |
+
 ## 子提交
 
 | Key | Action | Info |
@@ -204,6 +212,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` r `` | 刷新文件 |  |
 | `` s `` | 贮藏 | 贮藏所有变更.若要使用其他贮藏变体,请使用查看贮藏选项快捷键 |
 | `` S `` | 查看贮藏选项 | 查看贮藏选项（例如：贮藏所有、贮藏已暂存变更、贮藏未暂存变更） |
+| `` <ctrl+l> `` | LFS options | View git-lfs lock actions for the selected file. |
 | `` a `` | 切换所有文件的暂存状态 | 切换工作区中所有文件的已暂存/未暂存状态 |
 | `` <enter> `` | 暂存单个 块/行 用于文件, 或 折叠/展开 目录 | 如果选中的是一个文件，则会进入到暂存视图，以便可以暂存单个代码块/行。如果选中的是一个目录，则会折叠/展开这个目录 |
 | `` d `` | 查看'放弃变更'选项 | 查看选中文件的放弃变更选项 |

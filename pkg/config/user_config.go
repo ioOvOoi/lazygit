@@ -346,6 +346,8 @@ type GitConfig struct {
 	ParseEmoji bool `yaml:"parseEmoji"`
 	// Config for showing the log in the commits view
 	Log LogConfig `yaml:"log"`
+	// Config for git-lfs (Large File Storage) integration, chiefly the file-locking workflow used for unmergeable binary assets (e.g. Unreal Engine projects)
+	Lfs LfsConfig `yaml:"lfs"`
 	// How branches are sorted in the local branches view.
 	// One of: 'date' (default) | 'recency' | 'alphabetical'
 	// Can be changed from within Lazygit with the Sort Order menu (`s`) in the branches panel.
@@ -417,6 +419,16 @@ type LogConfig struct {
 	ShowGraph string `yaml:"showGraph" jsonschema:"enum=always,enum=never,enum=when-maximised"`
 	// displays the whole git graph by default in the commits view (equivalent to passing the `--all` argument to `git log`)
 	ShowWholeGraph bool `yaml:"showWholeGraph"`
+}
+
+type LfsConfig struct {
+	// When to release the git-lfs locks you hold on files you commit. Since teammates can only pull your changes after you push, the lock is released on push rather than at commit time. 'prompt' asks at commit time whether to release the committed files' locks on your next push; 'always' schedules it without asking; 'never' keeps the locks until you unlock them manually. Only locks you own are ever released.
+	// One of: 'prompt' (default) | 'always' | 'never'
+	UnlockOnPush string `yaml:"unlockOnPush" jsonschema:"enum=prompt,enum=always,enum=never"`
+	// If true, warn before committing a staged file that is at least largeFileThresholdMb in size but isn't tracked through the git-lfs filter, and offer to start tracking it with lfs. Only applies in repos that already use lfs. This helps avoid accidentally committing large binary assets (e.g. Unreal Engine files) as plain git objects when a .gitattributes pattern is missing.
+	WarnUntrackedLargeFiles bool `yaml:"warnUntrackedLargeFiles"`
+	// The size threshold, in megabytes, above which an untracked file triggers the warnUntrackedLargeFiles warning.
+	LargeFileThresholdMb int `yaml:"largeFileThresholdMb"`
 }
 
 type CommitPrefixConfig struct {
@@ -574,6 +586,7 @@ type KeybindingFilesConfig struct {
 	RefreshFiles             Keybinding `yaml:"refreshFiles"`
 	StashAllChanges          Keybinding `yaml:"stashAllChanges"`
 	ViewStashOptions         Keybinding `yaml:"viewStashOptions"`
+	LfsOptions               Keybinding `yaml:"lfsOptions"`
 	ToggleStagedAll          Keybinding `yaml:"toggleStagedAll"`
 	ViewResetOptions         Keybinding `yaml:"viewResetOptions"`
 	Fetch                    Keybinding `yaml:"fetch"`
@@ -864,7 +877,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 			ShrinkSidePanelsToContent: false,
 			SidePanels: []SidePanel{
 				{"status"},
-				{"files", "worktrees", "submodules"},
+				{"files", "worktrees", "submodules", "lfsLocks"},
 				{"branches", "remotes", "tags"},
 				{"commits", "reflog"},
 				{"stash"},
@@ -940,6 +953,11 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				ManualCommit:       false,
 				Args:               "",
 				SquashMergeMessage: "Squash merge {{selectedRef}} into {{currentBranch}}",
+			},
+			Lfs: LfsConfig{
+				UnlockOnPush:            "prompt",
+				WarnUntrackedLargeFiles: true,
+				LargeFileThresholdMb:    5,
 			},
 			Log: LogConfig{
 				Order:          "topo-order",
@@ -1089,6 +1107,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				RefreshFiles:             Keybinding{"r"},
 				StashAllChanges:          Keybinding{"s"},
 				ViewStashOptions:         Keybinding{"S"},
+				LfsOptions:               Keybinding{"<c-l>"},
 				ToggleStagedAll:          Keybinding{"a"},
 				ViewResetOptions:         Keybinding{"D"},
 				Fetch:                    Keybinding{"f"},

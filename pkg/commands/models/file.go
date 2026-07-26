@@ -23,6 +23,9 @@ type File struct {
 	LinesDeleted            int
 	LinesAdded              int
 
+	// If true, this file is tracked through the git-lfs filter (per .gitattributes)
+	IsLfsTracked bool
+
 	// If true, this must be a worktree folder
 	IsWorktree bool
 }

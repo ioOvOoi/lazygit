@@ -26,12 +26,18 @@ func RenderFileTree(
 	showNumstat bool,
 	customIconsConfig *config.CustomIconsConfig,
 	showRootItem bool,
+	lfsLocks []*models.LfsLock,
 ) []string {
+	locksByPath := make(map[string]*models.LfsLock, len(lfsLocks))
+	for _, lock := range lfsLocks {
+		locksByPath[lock.Path] = lock
+	}
+
 	collapsedPaths := tree.CollapsedPaths()
 	return renderAux(tree.GetRoot().Raw(), collapsedPaths, -1, -1, func(node *filetree.Node[models.File], treeDepth int, visualDepth int, isCollapsed bool) string {
 		fileNode := filetree.NewFileNode(node)
 
-		return getFileLine(isCollapsed, fileNode.GetHasUnstagedChanges(), fileNode.GetHasStagedChanges(), treeDepth, visualDepth, showNumstat, showFileIcons, submoduleConfigs, node, customIconsConfig, showRootItem)
+		return getFileLine(isCollapsed, fileNode.GetHasUnstagedChanges(), fileNode.GetHasStagedChanges(), treeDepth, visualDepth, showNumstat, showFileIcons, submoduleConfigs, node, customIconsConfig, showRootItem, locksByPath)
 	})
 }
 
@@ -121,6 +127,7 @@ func getFileLine(
 	node *filetree.Node[models.File],
 	customIconsConfig *config.CustomIconsConfig,
 	showRootItem bool,
+	locksByPath map[string]*models.LfsLock,
 ) string {
 	name := fileNameAtDepth(node, treeDepth, showRootItem)
 	output := ""
@@ -178,7 +185,35 @@ func getFileLine(
 		}
 	}
 
+	if file != nil {
+		if lfsInfo := formatLfsInfo(file, locksByPath[file.Path]); lfsInfo != "" {
+			output += " " + lfsInfo
+		}
+	}
+
 	return output
+}
+
+// formatLfsInfo renders the git-lfs annotations shown next to a file in the
+// files panel: an "LFS" badge when the file is tracked through the lfs filter,
+// and a padlock plus owner when the file is locked. Locks we hold are green;
+// locks held by others are yellow, to warn before editing.
+func formatLfsInfo(file *models.File, lock *models.LfsLock) string {
+	parts := []string{}
+
+	if file.IsLfsTracked {
+		parts = append(parts, style.FgCyan.Sprint("LFS"))
+	}
+
+	if lock != nil {
+		lockColor := style.FgYellow
+		if lock.Mine {
+			lockColor = style.FgGreen
+		}
+		parts = append(parts, lockColor.Sprintf("🔒 %s", lock.Owner))
+	}
+
+	return strings.Join(parts, " ")
 }
 
 func formatFileStatus(file *models.File, restColor style.TextStyle) string {

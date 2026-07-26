@@ -324,6 +324,7 @@ type Model struct {
 	SubCommits      []*models.Commit
 	Remotes         []*models.Remote
 	Worktrees       []*models.Worktree
+	LfsLocks        []*models.LfsLock
 	PullRequests    []*models.GithubPullRequest
 	PullRequestsMap map[string]*models.GithubPullRequest
 

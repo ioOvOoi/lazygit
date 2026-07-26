@@ -746,6 +746,44 @@ type TranslationSet struct {
 	SubCommitsTitle                       string
 	ExitSubview                           string
 	SubmodulesTitle                       string
+	LfsLocksTitle                         string
+	LfsOptions                            string
+	LfsOptionsTooltip                     string
+	LfsLock                               string
+	LfsLockTooltip                        string
+	LfsUnlock                             string
+	LfsUnlockTooltip                      string
+	LfsNoLocks                            string
+	LfsSelectFile                         string
+	LfsLockOwnerYou                       string
+	LfsLockPathColumn                     string
+	LfsLockOwnerColumn                    string
+	LfsLockLockedAtColumn                 string
+	LfsForceUnlockTitle                   string
+	LfsForceUnlockPrompt                  string
+	LfsUnlockOnPushTitle                  string
+	LfsUnlockOnPushPrompt                 string
+	LfsUntrackedLargeFilesTitle           string
+	LfsUntrackedLargeFilesPrompt          string
+	LfsTrackAndCommit                     string
+	LfsCommitAnyway                       string
+	LfsPullFile                           string
+	LfsPullFileTooltip                    string
+	LfsPullAll                            string
+	LfsPullAllTooltip                     string
+	LfsFetchAll                           string
+	LfsFetchAllTooltip                    string
+	LfsCheckout                           string
+	LfsCheckoutTooltip                    string
+	LfsPrune                              string
+	LfsPruneTooltip                       string
+	LfsPruneConfirm                       string
+	LfsPruneConfirmUnknown                string
+	LfsNothingToPrune                     string
+	LfsPullingStatus                      string
+	LfsFetchingStatus                     string
+	LfsCheckingOutStatus                  string
+	LfsPruningStatus                      string
 	NavigationTitle                       string
 	SuggestionsCheatsheetTitle            string
 	// Unlike the cheatsheet title above, the real suggestions title has a little message saying press tab to focus
@@ -1086,6 +1124,13 @@ type Actions struct {
 	PopStash                         string
 	ApplyStash                       string
 	DropStash                        string
+	LfsLock                          string
+	LfsUnlock                        string
+	LfsTrack                         string
+	LfsPull                          string
+	LfsFetch                         string
+	LfsCheckout                      string
+	LfsPrune                         string
 	RenameStash                      string
 	RemoveSubmodule                  string
 	ResetSubmodule                   string
@@ -1895,6 +1940,44 @@ func EnglishTranslationSet() *TranslationSet {
 		SubCommitsTitle:                          "Sub-commits",
 		ExitSubview:                              "Exit subview",
 		SubmodulesTitle:                          "Submodules",
+		LfsLocksTitle:                            "LFS Locks",
+		LfsOptions:                               "LFS options",
+		LfsOptionsTooltip:                        "View git-lfs lock actions for the selected file.",
+		LfsLock:                                  "Lock file (LFS)",
+		LfsLockTooltip:                           "Lock the selected file(s) on the git-lfs lock server so no one else can edit them. Useful for unmergeable binary assets (e.g. Unreal Engine .uasset/.umap files).",
+		LfsUnlock:                                "Unlock file (LFS)",
+		LfsUnlockTooltip:                         "Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force.",
+		LfsNoLocks:                               "No LFS locks",
+		LfsSelectFile:                            "Please select a file (not a directory) to lock or unlock",
+		LfsLockOwnerYou:                          "(you)",
+		LfsLockPathColumn:                        "Path:",
+		LfsLockOwnerColumn:                       "Owner:",
+		LfsLockLockedAtColumn:                    "Locked at:",
+		LfsForceUnlockTitle:                      "Force unlock",
+		LfsForceUnlockPrompt:                     "'{{.path}}' is locked by '{{.owner}}'. Are you sure you want to force-unlock it? This may disrupt their work.",
+		LfsUnlockOnPushTitle:                     "Unlock LFS files on push",
+		LfsUnlockOnPushPrompt:                    "Release your git-lfs lock on {{.count}} committed file(s) the next time you push? Others can only pull your changes after you push, so unlocking then avoids conflicts.",
+		LfsUntrackedLargeFilesTitle:              "Large files not tracked by LFS",
+		LfsUntrackedLargeFilesPrompt:             "These staged files are large but aren't tracked by Git LFS:\n\n{{.files}}\n\nCommitting them as plain git objects can bloat the repository. Track them with LFS first?",
+		LfsTrackAndCommit:                        "Track with LFS, then commit",
+		LfsCommitAnyway:                          "Commit anyway",
+		LfsPullFile:                              "Download this file (lfs pull)",
+		LfsPullFileTooltip:                       "Download the git-lfs content for the selected file (git lfs pull for this path).",
+		LfsPullAll:                               "Pull all LFS objects",
+		LfsPullAllTooltip:                        "Download and check out the git-lfs content for the current ref (git lfs pull).",
+		LfsFetchAll:                              "Fetch all LFS objects",
+		LfsFetchAllTooltip:                       "Download all git-lfs objects for all refs without touching the working tree (git lfs fetch --all).",
+		LfsCheckout:                              "Checkout LFS files",
+		LfsCheckoutTooltip:                       "Replace git-lfs pointer files in the working tree with their already-fetched content (git lfs checkout).",
+		LfsPrune:                                 "Clean up LFS cache (prune)",
+		LfsPruneTooltip:                          "Delete local git-lfs objects that are no longer needed and can be re-downloaded from the remote, freeing disk space (git lfs prune).",
+		LfsPruneConfirm:                          "This will delete {{.count}} local LFS object(s) that can be re-downloaded from the remote, freeing disk space. Continue?",
+		LfsPruneConfirmUnknown:                   "This will delete local LFS objects that are no longer needed (they can be re-downloaded from the remote), freeing disk space. Continue?",
+		LfsNothingToPrune:                        "No LFS objects to clean up",
+		LfsPullingStatus:                         "Downloading LFS objects",
+		LfsFetchingStatus:                        "Fetching LFS objects",
+		LfsCheckingOutStatus:                     "Checking out LFS files",
+		LfsPruningStatus:                         "Cleaning up LFS cache",
 		NavigationTitle:                          "List panel navigation",
 		SuggestionsCheatsheetTitle:               "Suggestions",
 		SuggestionsTitle:                         "Suggestions (press %s to focus)",
@@ -2191,6 +2274,13 @@ func EnglishTranslationSet() *TranslationSet {
 			PopStash:                         "Pop stash",
 			ApplyStash:                       "Apply stash",
 			DropStash:                        "Drop stash",
+			LfsLock:                          "Lock file (LFS)",
+			LfsUnlock:                        "Unlock file (LFS)",
+			LfsTrack:                         "Track file with LFS",
+			LfsPull:                          "Pull LFS objects",
+			LfsFetch:                         "Fetch LFS objects",
+			LfsCheckout:                      "Checkout LFS files",
+			LfsPrune:                         "Prune LFS cache",
 			RenameStash:                      "Rename stash",
 			RemoveSubmodule:                  "Remove submodule",
 			ResetSubmodule:                   "Reset submodule",

@@ -20,6 +20,7 @@ const (
 	PATCH_BUILDING
 	MERGE_CONFLICTS
 	COMMIT_FILES
+	LFS_LOCKS
 	// not actually views. Will refactor this later
 	BISECT_INFO
 	PULL_REQUESTS

@@ -59,6 +59,14 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` <enter> `` | 확인 |  |
 | `` <esc> `` | 닫기/취소 |  |
 
+## LFS Locks
+
+| Key | Action | Info |
+|-----|--------|-------------|
+| `` d `` | Unlock file (LFS) | Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force. |
+| `` 0 `` | Focus main view |  |
+| `` / `` | Filter the current view by text |  |
+
 ## Reflog
 
 | Key | Action | Info |
@@ -394,6 +402,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` r `` | 파일 새로고침 |  |
 | `` s `` | Stash | Stash all changes. For other variations of stashing, use the view stash options keybinding. |
 | `` S `` | Stash 옵션 보기 | View stash options (e.g. stash all, stash staged, stash unstaged). |
+| `` <ctrl+l> `` | LFS options | View git-lfs lock actions for the selected file. |
 | `` a `` | 모든 변경을 Staged/unstaged으로 전환 | Toggle staged/unstaged for all files in working tree. |
 | `` <enter> `` | Stage individual hunks/lines for file, or collapse/expand for directory | If the selected item is a file, focus the staging view so you can stage individual hunks/lines. If the selected item is a directory, collapse/expand it. |
 | `` d `` | View 'discard changes' options | View options for discarding changes to the selected file. |

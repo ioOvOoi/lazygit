@@ -178,6 +178,7 @@ func (gui *Gui) resetHelpersAndControllers() {
 	branchesController := controllers.NewBranchesController(common)
 	gitFlowController := controllers.NewGitFlowController(common)
 	stashController := controllers.NewStashController(common)
+	lfsLocksController := controllers.NewLfsLocksController(common)
 	commitFilesController := controllers.NewCommitFilesController(common)
 	patchExplorerControllerFactory := controllers.NewPatchExplorerControllerFactory(common)
 	stagingController := controllers.NewStagingController(common, gui.State.Contexts.Staging, gui.State.Contexts.StagingSecondary, false)
@@ -217,6 +218,7 @@ func (gui *Gui) resetHelpersAndControllers() {
 		gui.State.Contexts.RemoteBranches,
 		gui.State.Contexts.Files,
 		gui.State.Contexts.Submodules,
+		gui.State.Contexts.LfsLocks,
 		gui.State.Contexts.ReflogCommits,
 		gui.State.Contexts.LocalCommits,
 		gui.State.Contexts.CommitFiles,
@@ -258,6 +260,7 @@ func (gui *Gui) resetHelpersAndControllers() {
 		gui.State.Contexts.SubCommits,
 		gui.State.Contexts.CommitFiles,
 		gui.State.Contexts.Stash,
+		gui.State.Contexts.LfsLocks,
 	} {
 		controllers.AttachControllers(context, controllers.NewSwitchToFocusedMainViewController(
 			common, context,
@@ -355,6 +358,10 @@ func (gui *Gui) resetHelpersAndControllers() {
 
 	controllers.AttachControllers(gui.State.Contexts.Stash,
 		stashController,
+	)
+
+	controllers.AttachControllers(gui.State.Contexts.LfsLocks,
+		lfsLocksController,
 	)
 
 	controllers.AttachControllers(gui.State.Contexts.Menu,

@@ -126,6 +126,7 @@ func localisedTitle(tr *i18n.TranslationSet, str string) string {
 		"search":            tr.SearchTitle,
 		"secondary":         tr.SecondaryTitle,
 		"stash":             tr.StashTitle,
+		"lfsLocks":          tr.LfsLocksTitle,
 		"suggestions":       tr.SuggestionsCheatsheetTitle,
 		"extras":            tr.ExtrasTitle,
 		"worktrees":         tr.WorktreesTitle,

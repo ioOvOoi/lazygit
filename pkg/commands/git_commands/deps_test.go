@@ -179,3 +179,9 @@ func buildFlowCommands(deps commonDeps) *FlowCommands {
 
 	return NewFlowCommands(gitCommon)
 }
+
+func buildLfsCommands(deps commonDeps) *LfsCommands {
+	gitCommon := buildGitCommon(deps)
+
+	return NewLfsCommands(gitCommon)
+}

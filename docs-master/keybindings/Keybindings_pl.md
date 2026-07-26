@@ -155,6 +155,14 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` <enter> `` | Potwierdź |  |
 | `` <esc> `` | Zamknij/Anuluj |  |
 
+## LFS Locks
+
+| Key | Action | Info |
+|-----|--------|-------------|
+| `` d `` | Unlock file (LFS) | Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force. |
+| `` 0 `` | Focus main view |  |
+| `` / `` | Filtruj bieżący widok po tekście |  |
+
 ## Lokalne gałęzie
 
 | Key | Action | Info |
@@ -269,6 +277,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` r `` | Odśwież pliki |  |
 | `` s `` | Schowaj | Schowaj wszystkie zmiany. Dla innych wariantów schowania, użyj klawisza wyświetlania opcji schowka. |
 | `` S `` | Wyświetl opcje schowka | Wyświetl opcje schowka (np. schowaj wszystko, schowaj zatwierdzone, schowaj niezatwierdzone). |
+| `` <ctrl+l> `` | LFS options | View git-lfs lock actions for the selected file. |
 | `` a `` | Zatwierdź wszystko | Przełącz zatwierdzenie/odznaczenie dla wszystkich plików w drzewie roboczym. |
 | `` <enter> `` | Zatwierdź linie / Zwiń katalog | Jeśli wybrany element jest plikiem, skup się na widoku zatwierdzania, aby móc zatwierdzać poszczególne fragmenty/linie. Jeśli wybrany element jest katalogiem, zwiń/rozwiń go. |
 | `` d `` | Odrzuć | Wyświetl opcje odrzucania zmian w wybranym pliku. |

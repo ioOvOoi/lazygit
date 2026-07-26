@@ -14,6 +14,7 @@ type Views struct {
 	ReflogCommits  *gocui.View
 	Commits        *gocui.View
 	Stash          *gocui.View
+	LfsLocks       *gocui.View
 
 	Main                   *gocui.View
 	Secondary              *gocui.View

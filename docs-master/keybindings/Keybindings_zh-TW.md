@@ -59,6 +59,14 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` <enter> `` | 確認 |  |
 | `` <esc> `` | 關閉/取消 |  |
 
+## LFS Locks
+
+| Key | Action | Info |
+|-----|--------|-------------|
+| `` d `` | Unlock file (LFS) | Release the git-lfs lock on the selected file. Unlocking a file locked by someone else requires confirmation and uses --force. |
+| `` 0 `` | Focus main view |  |
+| `` / `` | 搜尋 |  |
+
 ## 主面板 (補丁生成)
 
 | Key | Action | Info |
@@ -344,6 +352,7 @@ _This file is auto-generated. To update, make the changes in the pkg/i18n direct
 | `` r `` | 重新整理檔案 |  |
 | `` s `` | 收藏 | Stash all changes. For other variations of stashing, use the view stash options keybinding. |
 | `` S `` | 檢視收藏選項 | View stash options (e.g. stash all, stash staged, stash unstaged). |
+| `` <ctrl+l> `` | LFS options | View git-lfs lock actions for the selected file. |
 | `` a `` | 全部預存/取消預存 | Toggle staged/unstaged for all files in working tree. |
 | `` <enter> `` | 選擇檔案中的單個程式碼塊/行，或展開/折疊目錄 | If the selected item is a file, focus the staging view so you can stage individual hunks/lines. If the selected item is a directory, collapse/expand it. |
 | `` d `` | 捨棄 | 檢視選中變動進行捨棄復原 |

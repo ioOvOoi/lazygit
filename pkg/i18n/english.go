@@ -1958,7 +1958,7 @@ func EnglishTranslationSet() *TranslationSet {
 		LfsLockLockedAtColumn:                    "Locked at:",
 		LfsForceUnlockTitle:                      "Force unlock",
 		LfsForceUnlockPrompt:                     "'{{.path}}' is locked by '{{.owner}}'. Are you sure you want to force-unlock it? This may disrupt their work.",
-		LfsForceUnlockMultiplePrompt:             "{{.count}} file(s) are locked by others: {{.paths}}. Are you sure you want to force-unlock them? This may disrupt their work."
+		LfsForceUnlockMultiplePrompt:             "{{.count}} file(s) are locked by others: {{.paths}}. Are you sure you want to force-unlock them? This may disrupt their work.",
 		LfsUnlockOnPushTitle:                     "Unlock LFS files on push",
 		LfsUnlockOnPushPrompt:                    "Release your git-lfs lock on {{.count}} committed file(s) the next time you push? Others can only pull your changes after you push, so unlocking then avoids conflicts.",
 		LfsUntrackedLargeFilesTitle:              "Large files not tracked by LFS",
@@ -1983,7 +1983,7 @@ func EnglishTranslationSet() *TranslationSet {
 		LfsCheckingOutStatus:                     "Checking out LFS files",
 		LfsPruningStatus:                         "Cleaning up LFS cache",
 		LfsUnlockingStatus:                       "Unlocking LFS files",
-		LfsLockingStatus:                         "Locking LFS files"
+		LfsLockingStatus:                         "Locking LFS files",
 		NavigationTitle:                          "List panel navigation",
 		SuggestionsCheatsheetTitle:               "Suggestions",
 		SuggestionsTitle:                         "Suggestions (press %s to focus)",

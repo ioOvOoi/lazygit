@@ -81,14 +81,20 @@ func NewRefreshHelper(
 }
 
 func (self *RefreshHelper) Refresh(options types.RefreshOptions) {
-	self.performRefresh(options, false)
+	self.performRefresh(options, false, false)
+}
+
+// RefreshBlockingInput is Refresh for handlers whose next keypress may depend
+// on the state the refresh produces. See IGuiCommon.RefreshBlockingInput.
+func (self *RefreshHelper) RefreshBlockingInput(options types.RefreshOptions) {
+	self.performRefresh(options, false, true)
 }
 
 // RefreshFromWorker is Refresh for callers already running on a worker
 // goroutine (e.g. inside a WithWaitingStatus handler) rather than the UI
 // thread. See IGuiCommon.RefreshFromWorker.
 func (self *RefreshHelper) RefreshFromWorker(options types.RefreshOptions) {
-	self.performRefresh(options, true)
+	self.performRefresh(options, true, false)
 }
 
 type refreshEnv struct {
@@ -159,7 +165,7 @@ func (self *refreshBounceBatch) close() []func() {
 	return self.funcs
 }
 
-func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFromWorker bool) {
+func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFromWorker bool, blockInput bool) {
 	startTime := time.Now()
 
 	// A refresh from a worker blocks that worker until it's done; one from the
@@ -190,6 +196,17 @@ func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFr
 		// would run against the newly switched-to repo. A refresh carrying a
 		// Then must keep blocking switches.
 		panic("a refresh with a Then callback must not set DontBlockRepoSwitch")
+	}
+
+	// A RefreshBlockingInput caller wants keyboard input withheld until the
+	// refreshed state is in place (see IGuiCommon.RefreshBlockingInput). Begin
+	// the block synchronously here in the calling handler, so that no keypress
+	// can slip through before it; the finishing step ends it from a callback
+	// queued behind the refresh's own updates (see waitAndFinalize). Demos
+	// take the blocking inline path below and need none of this.
+	blockInputUntilDone := blockInput && !self.c.InDemo()
+	if blockInputUntilDone {
+		self.c.GocuiGui().BeginBlockingEvents()
 	}
 
 	// Capture the refresh's baseline once, here at the start: the repo
@@ -306,7 +323,7 @@ func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFr
 		var capturedReflog capturedReflogState
 		var capturedBranches capturedBranchState
 		self.captureOnUIThread(calledFromWorker, env.background, func() {
-			capturedCommits = self.captureCommitsState(options.CommitSelection)
+			capturedCommits = self.captureCommitsState()
 			capturedReflog = self.captureReflogState()
 			capturedBranches = self.captureBranchState()
 		})
@@ -503,6 +520,15 @@ func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFr
 			self.onUIThread(env.background, options.Then)
 		}
 
+		if blockInputUntilDone {
+			// Queued after the scopes' model bounces and Then, so by the time
+			// this runs — and the keys buffered during the refresh replay —
+			// the refreshed state is in place.
+			self.c.OnUIThread(func() error {
+				return self.c.GocuiGui().EndBlockingEvents()
+			})
+		}
+
 		self.c.Log.Infof("Refresh took %s", time.Since(startTime))
 	}
 
@@ -684,7 +710,6 @@ func (self *RefreshHelper) refreshReflogAndBranches(capturedReflog capturedReflo
 // worker computes from an immutable snapshot rather than reading state the UI
 // thread concurrently mutates.
 type capturedCommitState struct {
-	selectionRange       *localCommitSelectionRange
 	limitCommits         bool
 	showWholeGitGraph    bool
 	filterPath           string
@@ -696,17 +721,12 @@ type capturedCommitState struct {
 
 // captureCommitsState reads the commits refresh's model/context/mode inputs
 // into an immutable snapshot. It must run on the UI thread.
-func (self *RefreshHelper) captureCommitsState(commitSelection types.CommitSelectionBehavior) capturedCommitState {
-	var selectionRange *localCommitSelectionRange
-	if commitSelection == types.KeepCommitSelectionByHash {
-		selectedIdx, rangeStartIdx, rangeSelectMode := self.c.Contexts().LocalCommits.GetSelectionRangeAndMode()
-		selectionRange = captureLocalCommitSelectionRange(self.c.Model().Commits, selectedIdx, rangeStartIdx, rangeSelectMode)
-	}
-
+// The selection is captured later, when applying the refresh, so user input
+// received while the git work is in flight is not overwritten.
+func (self *RefreshHelper) captureCommitsState() capturedCommitState {
 	parentCtx := self.c.Contexts().CommitFiles.GetParentContext()
 
 	return capturedCommitState{
-		selectionRange:       selectionRange,
 		limitCommits:         self.c.Contexts().LocalCommits.GetLimitCommits(),
 		showWholeGitGraph:    self.c.Contexts().LocalCommits.GetShowWholeGitGraph(),
 		filterPath:           self.c.Modes().Filtering.GetPath(),
@@ -795,6 +815,12 @@ func (self *RefreshHelper) refreshCommitsWithLimit(captured capturedCommitState,
 	workingTreeState := env.git.Status.WorkingTreeState()
 
 	self.onUIThreadUnlessRepoChanged(env, func() {
+		var selectionRange *localCommitSelectionRange
+		if commitSelection == types.KeepCommitSelectionByHash {
+			selectedIdx, rangeStartIdx, rangeSelectMode := self.c.Contexts().LocalCommits.GetSelectionRangeAndMode()
+			selectionRange = captureLocalCommitSelectionRange(self.c.Model().Commits, selectedIdx, rangeStartIdx, rangeSelectMode)
+		}
+
 		self.c.Model().BisectInfo = bisectInfo
 		self.c.Model().Commits = commits
 		self.RefreshAuthors(commits)
@@ -813,10 +839,10 @@ func (self *RefreshHelper) refreshCommitsWithLimit(captured capturedCommitState,
 				scrollSelectionIntoView = true
 			}
 		case types.KeepCommitSelectionByHash:
-			if captured.selectionRange != nil {
-				selectedIdx, rangeStartIdx, didMove, found := findLocalCommitSelectionRange(commits, captured.selectionRange)
+			if selectionRange != nil {
+				selectedIdx, rangeStartIdx, didMove, found := findLocalCommitSelectionRange(commits, selectionRange)
 				if found {
-					self.c.Contexts().LocalCommits.SetSelectionRangeAndMode(selectedIdx, rangeStartIdx, captured.selectionRange.mode)
+					self.c.Contexts().LocalCommits.SetSelectionRangeAndMode(selectedIdx, rangeStartIdx, selectionRange.mode)
 					scrollSelectionIntoView = didMove
 				}
 			}
@@ -1222,11 +1248,11 @@ func (self *RefreshHelper) onUIThread(background bool, f func() error) {
 // runs on the UI thread (calledFromWorker is false) fn runs inline; when it runs
 // on a worker, fn is dispatched to the UI thread and we block for it.
 //
-// The inline case matters for correctness as much as the hop: a SYNC refresh
-// initiated on the UI thread parks that thread in a wg.Wait while its scope
-// workers run, so a scope worker that tried to hop to the UI thread there would
-// deadlock. Capturing before those workers are spawned — inline, on the UI
-// thread — avoids that entirely.
+// The inline case matters for correctness as much as the hop: OnUIThreadAndWait
+// must not be called from the UI thread itself (it would park the thread
+// waiting for a callback that only it can run), and capturing inline also
+// guarantees the snapshot reflects the state at the moment Refresh was called,
+// before the calling handler regains control and can mutate it.
 func (self *RefreshHelper) captureOnUIThread(calledFromWorker bool, background bool, fn func()) {
 	if !calledFromWorker {
 		fn()

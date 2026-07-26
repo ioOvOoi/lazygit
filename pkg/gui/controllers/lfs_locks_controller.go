@@ -98,29 +98,6 @@ func (self *LfsLocksController) context() *context.LfsLocksContext {
 	return self.c.Contexts().LfsLocks
 }
 
-func (self *LfsLocksController) unlock(lock *models.LfsLock) error {
-	if lock.Mine {
-		return self.doUnlock(lock, false)
-	}
-
-	// Someone else holds this lock; releasing it needs --force and can disrupt
-	// their work, so make the user confirm before we override it.
-	self.c.Confirm(types.ConfirmOpts{
-		Title: self.c.Tr.LfsForceUnlockTitle,
-		Prompt: utils.ResolvePlaceholderString(
-			self.c.Tr.LfsForceUnlockPrompt,
-			map[string]string{
-				"path":  lock.Path,
-				"owner": lock.Owner,
-			},
-		),
-		HandleConfirm: func() error {
-			return self.doUnlock(lock, true)
-		},
-	})
-	return nil
-}
-
 func (self *LfsLocksController) unlockMultiple(locks []*models.LfsLock) error {
 	// Separate locks into owned and non-owned
 	var nonOwned []*models.LfsLock
@@ -174,21 +151,5 @@ func (self *LfsLocksController) doUnlockMultiple(locks []*models.LfsLock) error 
 			return fmt.Errorf("failed to unlock %d file(s): %w", len(errs), errors.Join(errs...))
 		}
 		return nil
-	})
-}
-
-func (self *LfsLocksController) doUnlock(lock *models.LfsLock, force bool) error {
-	return self.c.WithWaitingStatus(self.c.Tr.LfsUnlockingStatus, func(gocui.Task) error {
-		self.c.LogAction(self.c.Tr.Actions.LfsUnlock)
-
-		var err error
-		if force {
-			err = self.c.Git().Lfs.UnlockForce(lock.Path)
-		} else {
-			err = self.c.Git().Lfs.Unlock(lock.Path)
-		}
-
-		self.c.Refresh(types.RefreshOptions{Scope: []types.RefreshableView{types.LFS_LOCKS, types.FILES}})
-		return err
 	})
 }

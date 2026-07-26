@@ -1292,20 +1292,24 @@ func (self *FilesController) createLfsMenu(node *filetree.FileNode) error {
 				Label:   self.c.Tr.LfsLock,
 				Tooltip: self.c.Tr.LfsLockTooltip,
 				OnPress: func() error {
-					self.c.LogAction(self.c.Tr.Actions.LfsLock)
-					err := self.c.Git().Lfs.Lock(path)
-					lfsRefresh()
-					return err
+					return self.c.WithWaitingStatus(self.c.Tr.LfsLockingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsLock)
+						err := self.c.Git().Lfs.Lock(path)
+						lfsRefresh()
+						return err
+					})
 				},
 			},
 			{
 				Label:   self.c.Tr.LfsUnlock,
 				Tooltip: self.c.Tr.LfsUnlockTooltip,
 				OnPress: func() error {
-					self.c.LogAction(self.c.Tr.Actions.LfsUnlock)
-					err := self.c.Git().Lfs.Unlock(path)
-					lfsRefresh()
-					return err
+					return self.c.WithWaitingStatus(self.c.Tr.LfsUnlockingStatus, func(gocui.Task) error {
+						self.c.LogAction(self.c.Tr.Actions.LfsUnlock)
+						err := self.c.Git().Lfs.Unlock(path)
+						lfsRefresh()
+						return err
+					})
 				},
 			},
 			{
